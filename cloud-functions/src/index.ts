@@ -147,7 +147,12 @@ export const autoCheckout = onSchedule(
 );
 
 // ── 5. Exchange Token (SSO) ────────────────────────────────────
-export const exchangeToken = onCall(async (request: CallableRequest) => {
+export const exchangeToken = onCall({
+  minInstances: 0,
+  maxInstances: 20,
+  concurrency: 80,
+  cpu: 1,
+}, async (request: CallableRequest) => {
   const idToken = request.data.idToken;
 
   if (!idToken) {

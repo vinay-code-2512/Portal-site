@@ -59,7 +59,7 @@ function getFirebaseErrorMessage(code: string): string {
   return map[code] || `Something went wrong (${code}). Please try again`;
 }
 
-type Role = "user" | "paid-user" | "employee" | "admin";
+type Role = "paid-user" | "employee" | "admin";
 
 type State = {
   role: Role;
@@ -137,7 +137,7 @@ function reducer(state: State, action: Action): State {
 }
 
 const initialState: State = {
-  role: "user",
+  role: "paid-user",
   email: "",
   password: "",
   showPassword: false,
@@ -160,7 +160,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   const rawRole = searchParams.get("role") as Role;
-  const initialRole = ["user", "paid-user", "employee", "admin"].includes(rawRole) ? rawRole : "user";
+  const initialRole = ["paid-user", "employee", "admin"].includes(rawRole) ? rawRole : "paid-user";
 
   const [state, dispatch] = useReducer(reducer, { ...initialState, role: initialRole });
   const {
@@ -257,7 +257,7 @@ function LoginForm() {
       const userData = userSnap.data();
       const userRole = userData?.role || "user";
 
-      if (role !== "user" && role !== "paid-user" && userRole !== role) {
+      if (role !== "paid-user" && userRole !== role) {
         await signOut(auth);
         dispatch({
           type: "SET_SUBMIT_ERROR",
@@ -543,7 +543,7 @@ src="/RGLogo.png"
 
               {!isForgotPassword && (
                 <div className="flex p-1 mb-8 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  {(["user", "paid-user", "employee", "admin"] as const).map((r) => {
+                  {(["paid-user", "employee", "admin"] as const).map((r) => {
                     const label = r === "paid-user" ? "Students" : r;
                     return (
                       <button
