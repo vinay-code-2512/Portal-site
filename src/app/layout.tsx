@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 
 const AuthProvider = dynamic(() => import("@/context/AuthContext").then(m => ({ default: m.AuthProvider })));
+const CustomCursor = dynamic(() => import("@/components/CustomCursor"), { ssr: false });
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap", preload: true });
 
@@ -58,6 +59,7 @@ gtag('js', new Date());
 gtag('config', 'G-VLQ74SHVGD');`}
         </Script>
         <AuthProvider>
+          <CustomCursor />
           <main className="flex-grow">
             {children}
           </main>
