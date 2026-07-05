@@ -310,6 +310,8 @@ video {
   backface-visibility: hidden;
 }
 
+input, textarea, select { caret-color: #fff !important; }
+
 /* ===== COMPONENT LAYER (must be first for @apply to work) ===== */
 @layer components {
   .glass-panel {
