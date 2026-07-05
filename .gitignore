@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+cloud-functions/node_modules/
+cloud-functions/lib/
 /.pnp
 .pnp.js
 .yarn/install-state.gz

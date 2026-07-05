@@ -1,0 +1,696 @@
+/* ===== PORTAL THEMES ===== */
+/* Loaded only on admin/employee/dashboard pages */
+
+.admin-portal {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, #0b0b1a 0%, #101028 44%, #1a1a22 100%);
+}
+
+.admin-portal-grid,
+.employee-portal-mesh {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.admin-portal-grid {
+  background-image:
+    linear-gradient(rgba(80, 57, 240, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(80, 57, 240, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(180deg, black, transparent 78%);
+}
+
+.admin-portal-stripe {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  height: 180px;
+  width: 72vw;
+  background: linear-gradient(90deg, transparent, rgba(80, 57, 240, 0.12), transparent);
+  transform: rotate(-16deg);
+}
+
+.admin-portal-stripe-a {
+  top: 9%;
+  right: -20%;
+}
+
+.admin-portal-stripe-b {
+  bottom: 8%;
+  left: 12%;
+  opacity: 0.42;
+}
+
+.admin-portal .portal-card {
+  border-color: rgba(80, 57, 240, 0.18);
+  background:
+    linear-gradient(180deg, rgba(20, 20, 40, 0.94), rgba(11, 11, 26, 0.96));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.admin-portal .portal-panel {
+  border-color: rgba(80, 57, 240, 0.14);
+  background: rgba(11, 11, 26, 0.76);
+}
+
+.admin-command-surface {
+  border-radius: 8px;
+  border: 1px solid rgba(80, 57, 240, 0.22);
+  background:
+    linear-gradient(135deg, rgba(20, 20, 40, 0.95), rgba(11, 11, 26, 0.96)),
+    linear-gradient(90deg, rgba(80, 57, 240, 0.12), transparent);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+}
+
+.admin-command-metric {
+  min-height: 68px;
+  border-radius: 8px;
+  border: 1px solid rgba(80, 57, 240, 0.16);
+  background: rgba(255, 255, 255, 0.045);
+  padding: 0.75rem 0.9rem;
+}
+
+.admin-command-metric span {
+  display: block;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.admin-command-metric strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: #fff7ed;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.employee-portal {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, #0b0b1a 0%, #101028 48%, #14142e 100%);
+}
+
+.employee-portal-mesh {
+  background:
+    linear-gradient(120deg, rgba(80, 57, 240, 0.08), transparent 30%, rgba(106, 85, 245, 0.08) 72%, transparent),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 72px);
+}
+
+.employee-portal-band {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  height: 220px;
+  width: 110vw;
+  background: linear-gradient(90deg, transparent, rgba(80, 57, 240, 0.12), rgba(106, 85, 245, 0.08), transparent);
+}
+
+.employee-portal-band-a {
+  top: 5rem;
+  left: -10vw;
+  transform: rotate(7deg);
+}
+
+.employee-portal-band-b {
+  bottom: 2rem;
+  right: -18vw;
+  transform: rotate(-9deg);
+  opacity: 0.5;
+}
+
+.employee-portal .portal-card {
+  border-color: rgba(80, 57, 240, 0.22);
+  background:
+    linear-gradient(180deg, rgba(20, 20, 40, 0.92), rgba(11, 11, 26, 0.95));
+  box-shadow: 0 20px 58px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.employee-portal .portal-panel {
+  border-color: rgba(106, 85, 245, 0.18);
+  background: rgba(11, 11, 26, 0.76);
+}
+
+.employee-shift-hero {
+  border-radius: 8px;
+  border: 1px solid rgba(106, 85, 245, 0.2);
+  background:
+    linear-gradient(135deg, rgba(20, 20, 40, 0.96), rgba(11, 11, 26, 0.96)),
+    linear-gradient(90deg, rgba(80, 57, 240, 0.16), transparent 48%, rgba(106, 85, 245, 0.12));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+}
+
+.employee-portal button[class*="from-[#FFB300]"],
+.employee-portal button[class*="bg-[#FF8F00]"] {
+  background: linear-gradient(135deg, #5039F0, #6A55F5) !important;
+  box-shadow: 0 0 20px rgba(80, 57, 240, 0.35) !important;
+}
+
+.employee-portal [class*="text-[#FFB300]"],
+.employee-portal [class*="text-[#FF8F00]"],
+.employee-portal [class*="text-[#FFD700]"] {
+  color: #9A8CFF !important;
+}
+
+.employee-portal [class*="border-[#FFB300]"],
+.employee-portal [class*="border-[#FF8F00]"],
+.employee-portal [class*="border-[#FFD700]"] {
+  border-color: rgba(80, 57, 240, 0.32) !important;
+}
+
+.employee-portal [class*="bg-[#FFB300]"],
+.employee-portal [class*="bg-[#FF8F00]"],
+.employee-portal [class*="bg-[#FFD700]"] {
+  background-color: rgba(80, 57, 240, 0.16) !important;
+}
+
+/* ===== HRMS DASHBOARD THEME ===== */
+main:has(.hrms-portal) {
+  padding-top: 0 !important;
+}
+
+.hrms-portal {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, #07070d 0%, #0d0d1a 44%, #111122 100%);
+}
+
+.hrms-mesh {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(80, 57, 240, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(80, 57, 240, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(180deg, black, transparent 80%);
+}
+
+.hrms-glow {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  height: 300px;
+  width: 60vw;
+  background: radial-gradient(ellipse at center, rgba(80, 57, 240, 0.12), transparent 70%);
+  filter: blur(60px);
+}
+
+.hrms-glow--a {
+  top: -10%;
+  right: -10%;
+}
+
+.hrms-glow--b {
+  bottom: -10%;
+  left: -10%;
+  opacity: 0.6;
+  background: radial-gradient(ellipse at center, rgba(80, 57, 240, 0.08), transparent 70%);
+}
+
+.hrms-glass {
+  background: #141428;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.25s ease;
+}
+
+.hrms-glass--hover:hover {
+  background: #1a1a35;
+  border-color: rgba(80, 57, 240, 0.25);
+  box-shadow: 0 8px 32px rgba(80, 57, 240, 0.15);
+}
+
+/* ===== EMPLOYEE PORTAL WHITE + LAVENDER THEME ===== */
+.employee-theme {
+  --background: #F4F2FC;
+  --bg-secondary: #E6EFFF;
+  --bg-card: rgba(255, 255, 255, 0.6);
+  --foreground: #111827;
+  --text-muted: #4B5563;
+  --text-light: #111827;
+  --text-secondary: #374151;
+  --border-light: rgba(255, 255, 255, 0.45);
+
+  --color-primary: #5B4CFF;
+  --color-primary-light: #7A6EFF;
+  --color-primary-glow: #9B91FF;
+  --color-primary-dim: rgba(91, 76, 255, 0.12);
+}
+
+.employee-theme.hrms-portal {
+  background:
+    linear-gradient(to right, #BAA8FF 0%, #F4F2FC 15%, #BAA8FF 55%, #F4F2FC 70%, #BAA8FF 100%) !important;
+}
+
+.employee-theme .hrms-mesh {
+  display: block;
+  background-image:
+    linear-gradient(rgba(91, 76, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91, 76, 255, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(180deg, black, transparent 80%);
+}
+
+.employee-theme .hrms-glow {
+  display: block;
+  filter: blur(120px);
+}
+
+.employee-theme .hrms-glow--a {
+  background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.26), transparent 70%) !important;
+  top: -15%;
+  right: -15%;
+  width: 75vw;
+  height: 65vh;
+  opacity: 0.95 !important;
+}
+
+.employee-theme .hrms-glow--b {
+  background: radial-gradient(ellipse at center, rgba(147, 51, 234, 0.24), transparent 70%) !important;
+  bottom: -15%;
+  left: -15%;
+  width: 55vw;
+  height: 45vh;
+  opacity: 0.95 !important;
+}
+
+.employee-theme .hrms-glass {
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 2px solid rgba(91, 76, 255, 0.35) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 32px 0 rgba(91, 76, 255, 0.04) !important;
+}
+
+.employee-theme .hrms-glass--hover:hover {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border-color: rgba(91, 76, 255, 0.22) !important;
+  box-shadow: 0 12px 40px rgba(91, 76, 255, 0.08) !important;
+}
+
+/* Base Text elements styling overrides */
+.employee-theme h1,
+.employee-theme h2,
+.employee-theme h3,
+.employee-theme h4,
+.employee-theme h5,
+.employee-theme h6,
+.employee-theme p,
+.employee-theme span,
+.employee-theme div,
+.employee-theme label {
+  color: #111827;
+}
+
+.employee-theme .text-white {
+  color: #111827 !important;
+}
+
+.employee-theme .text-zinc-100,
+.employee-theme .text-zinc-200,
+.employee-theme .text-zinc-300 {
+  color: #111827 !important;
+}
+
+.employee-theme .text-zinc-400 {
+  color: #4B5563 !important;
+}
+
+.employee-theme .text-zinc-500 {
+  color: #6B7280 !important;
+}
+
+.employee-theme .text-zinc-600 {
+  color: #9CA3AF !important;
+}
+
+/* Force white text on primary buttons or status badges */
+.employee-theme button.text-white,
+.employee-theme button .text-white,
+.employee-theme .bg-gradient-to-r .text-white,
+.employee-theme .bg-gradient-to-br .text-white,
+.employee-theme .bg-gradient-to-r span,
+.employee-theme .bg-gradient-to-br span,
+.employee-theme .bg-gradient-to-r svg,
+.employee-theme .bg-gradient-to-br svg,
+.employee-theme [class*="bg-emerald"] *,
+.employee-theme [class*="bg-amber"] *,
+.employee-theme [class*="bg-purple"] *,
+.employee-theme [class*="bg-blue"] * {
+  color: #FFFFFF !important;
+}
+
+/* Clean Borders */
+.employee-theme .border-white\/5,
+.employee-theme .border-white\/10,
+.employee-theme .border-white\/20,
+.employee-theme .border-zinc-800 {
+  border-color: #E5E7EB !important;
+}
+
+/* Minimal Shadows — remove glow effects */
+.employee-theme button {
+  box-shadow: none !important;
+}
+
+.employee-theme .hrms-glass--glow {
+  box-shadow: none !important;
+}
+
+.employee-theme [class*="shadow-\\[0_0_"],
+.employee-theme [class*="shadow-\\[0_4px_"] {
+  box-shadow: none !important;
+}
+
+/* Preserve subtle shadow only on dropdowns/modals */
+.employee-theme header [class*="shadow-\\[0_20"] {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Rounded Corners */
+.employee-theme button.rounded-xl,
+.employee-theme button.rounded-lg,
+.employee-theme a.rounded-xl,
+.employee-theme a.rounded-lg,
+.employee-theme input.rounded-xl,
+.employee-theme input.rounded-lg,
+.employee-theme select.rounded-xl,
+.employee-theme select.rounded-lg {
+  border-radius: 12px !important;
+}
+
+/* Navbar / Header customization */
+.employee-theme header {
+  background: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.employee-theme header .text-white { color: #111827 !important; }
+.employee-theme header .text-zinc-400 { color: #4B5563 !important; }
+.employee-theme header .text-zinc-500 { color: #6B7280 !important; }
+
+.employee-theme header nav a {
+  color: #4B5563 !important;
+  border: 1px solid transparent !important;
+}
+
+.employee-theme header nav a:hover,
+.employee-theme header nav a.bg-\[var\(--color-primary-dim\)\] {
+  color: #FFFFFF !important;
+  background: linear-gradient(135deg, #5B4CFF, #4F46E5) !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(91, 76, 255, 0.25) !important;
+}
+
+.employee-theme header nav a:hover *,
+.employee-theme header nav a.bg-\[var\(--color-primary-dim\)\] * {
+  color: #FFFFFF !important;
+}
+
+.employee-theme header button {
+  background: rgba(255, 255, 255, 0.45) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  color: #4B5563 !important;
+}
+
+.employee-theme header button:hover {
+  color: #111827 !important;
+  background: rgba(255, 255, 255, 0.65) !important;
+  border-color: rgba(91, 76, 255, 0.22) !important;
+}
+
+/* Geolocation Presence Location badge */
+.employee-theme .hrms-location-badge {
+  background: #F1F0FA !important;
+  border-color: #D3CFFF !important;
+}
+
+.employee-theme .hrms-location-label {
+  color: #5B4CFF !important;
+  font-weight: 800 !important;
+}
+
+.employee-theme .hrms-location-value {
+  color: #111827 !important;
+}
+
+/* Time Card container */
+.employee-theme .hrms-time-card {
+  background: #F1F0FA !important;
+  border-color: #D3CFFF !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Attendance status card */
+.employee-theme .hrms-attendance-card {
+  background: linear-gradient(135deg, #5B4CFF, #4F46E5) !important;
+  border-color: transparent !important;
+  box-shadow: 0 10px 25px rgba(91, 76, 255, 0.25) !important;
+}
+
+.employee-theme .hrms-attendance-card p,
+.employee-theme .hrms-attendance-card span,
+.employee-theme .hrms-attendance-card div {
+  color: #FFFFFF !important;
+}
+
+.employee-theme .hrms-attendance-card .text-white,
+.employee-theme .hrms-attendance-card .text-zinc-300,
+.employee-theme .hrms-attendance-card .text-zinc-500,
+.employee-theme .hrms-attendance-card .text-zinc-600,
+.employee-theme .hrms-attendance-card [class*="text-emerald"],
+.employee-theme .hrms-attendance-card [class*="text-amber"],
+.employee-theme .hrms-attendance-card [class*="text-red"],
+.employee-theme .hrms-attendance-card [class*="text-purple"],
+.employee-theme .hrms-attendance-card svg {
+  color: #FFFFFF !important;
+}
+
+.employee-theme .hrms-attendance-card .border {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.employee-theme .hrms-attendance-card [class*="bg-emerald-500/10"],
+.employee-theme .hrms-attendance-card [class*="bg-amber-500/10"],
+.employee-theme .hrms-attendance-card [class*="bg-red-500/10"],
+.employee-theme .hrms-attendance-card [class*="bg-[var(--color-primary-dim)]"] {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: none !important;
+}
+
+/* TopNavbar dropdown */
+.employee-theme header [class*="bg-[#0f0f1a]"] {
+  background: #FFFFFF !important;
+  border-color: #E5E7EB !important;
+}
+
+.employee-theme header [class*="bg-[#0f0f1a]"] .text-white { color: #111827 !important; }
+.employee-theme header [class*="bg-[#0f0f1a]"] .text-zinc-400,
+.employee-theme header [class*="bg-[#0f0f1a]"] .text-zinc-500 { color: #6B7280 !important; }
+.employee-theme header [class*="bg-[#0f0f1a]"] [class*="border-white"] { border-color: #E5E7EB !important; }
+
+.employee-theme header [class*="bg-[#0f0f1a]"] button:hover {
+  color: #111827 !important;
+  background: #F1F0FA !important;
+}
+
+/* Primary buttons hover overrides */
+.employee-theme button.bg-gradient-to-r:hover,
+.employee-theme button.bg-gradient-to-br:hover {
+  background: #4F46E5 !important;
+}
+
+/* Reduced motion override */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===== GLOBAL POLISH — SCROLLBAR, CARD LIFT, BUTTON EFFECTS ===== */
+.employee-theme ::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+.employee-theme ::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.employee-theme ::-webkit-scrollbar-thumb {
+  background: #5B4CFF !important;
+  border-radius: 999px !important;
+}
+
+.employee-theme ::-webkit-scrollbar-thumb:hover {
+  background: #4F46E5 !important;
+}
+
+.employee-theme * {
+  scrollbar-width: thin !important;
+  scrollbar-color: #5B4CFF transparent !important;
+}
+
+/* Card lift */
+.employee-theme .hrms-card-lift {
+  transition: transform 300ms ease, box-shadow 300ms ease !important;
+}
+
+.employee-theme .hrms-card-lift:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 40px rgba(91, 76, 255, 0.10) !important;
+}
+
+/* Primary button hover scale */
+.employee-theme button.bg-gradient-to-r:not(:disabled):hover,
+.employee-theme button.bg-gradient-to-br:not(:disabled):hover {
+  transform: scale(1.02) !important;
+  transition: transform 200ms ease !important;
+}
+
+.employee-theme .text-purple-400 {
+  color: var(--color-primary) !important;
+}
+
+/* Badge system */
+.employee-theme .hrms-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 2px 8px !important;
+  border-radius: 999px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  border: 1px solid !important;
+}
+
+.employee-theme .hrms-badge--approved {
+  background: rgba(16, 185, 129, 0.10) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+  color: #059669 !important;
+}
+
+.employee-theme .hrms-badge--pending {
+  background: rgba(245, 158, 11, 0.10) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+  color: #D97706 !important;
+}
+
+.employee-theme .hrms-badge--rejected {
+  background: rgba(239, 68, 68, 0.10) !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+  color: #DC2626 !important;
+}
+
+.employee-theme .hrms-badge--info {
+  background: rgba(91, 76, 255, 0.10) !important;
+  border-color: rgba(91, 76, 255, 0.25) !important;
+  color: var(--color-primary) !important;
+}
+
+/* Breadcrumb */
+.employee-theme .hrms-breadcrumb {
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 800 !important;
+  color: var(--color-primary) !important;
+}
+
+/* Page title */
+.employee-theme .hrms-page-title {
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+  letter-spacing: -0.02em !important;
+  margin-top: 0.125rem !important;
+}
+
+.employee-theme .hrms-page-subtitle {
+  font-size: 0.75rem !important;
+  color: #6B7280 !important;
+  margin-top: 0.125rem !important;
+}
+
+/* Floating segmented tab navigation */
+.employee-theme .hrms-tabs {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  background: rgba(255, 255, 255, 0.30) !important;
+  backdrop-filter: blur(12px) !important;
+  border-radius: 12px !important;
+  padding: 0.25rem !important;
+  border: 1px solid rgba(91, 76, 255, 0.15) !important;
+}
+
+.employee-theme .hrms-tab {
+  padding: 0.5rem 1rem !important;
+  border-radius: 8px !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  transition: all 200ms ease !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  border: 1px solid transparent !important;
+}
+
+.employee-theme .hrms-tab--active {
+  background: rgba(255, 255, 255, 0.80) !important;
+  backdrop-filter: blur(8px) !important;
+  color: var(--color-primary) !important;
+  border-color: rgba(91, 76, 255, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(91, 76, 255, 0.08) !important;
+}
+
+.employee-theme .hrms-tab--inactive {
+  color: #6B7280 !important;
+  border-color: transparent !important;
+}
+
+.employee-theme .hrms-tab--inactive:hover {
+  color: #374151 !important;
+  background: rgba(255, 255, 255, 0.30) !important;
+}
+
+/* ROTATING LUXURY CIRCLE */
+.rotate-circle {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #ec4899,
+    #8b5cf6,
+    #3b82f6,
+    #ec4899
+  );
+  filter: blur(90px);
+  opacity: 0.25;
+  animation: spin 10s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
