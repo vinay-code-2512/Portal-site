@@ -389,7 +389,7 @@ function LoginForm() {
   };
 
   const inputClass = (field: string, base = "") =>
-    `w-full min-h-[48px] pl-10 pr-4 py-3 text-sm rounded-xl bg-white/[0.03] border text-white placeholder:text-zinc-600 focus:outline-none transition-colors duration-200 ${
+    `w-full min-h-[48px] pl-10 pr-4 py-3 text-sm rounded-xl bg-white/[0.03] border text-white caret-white placeholder:text-zinc-600 focus:outline-none transition-colors duration-200 ${
       fieldErrors[field]
         ? "border-red-500/50 focus:border-red-500/70 focus:ring-2 focus:ring-red-500/20"
         : "border-white/[0.08] focus:border-rose-400/50 focus:ring-2 focus:ring-rose-400/20 focus:shadow-[0_0_16px_rgba(244,63,94,0.08)]"
