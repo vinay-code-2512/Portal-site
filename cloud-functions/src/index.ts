@@ -161,6 +161,8 @@ export const exchangeToken = onCall(async (request: CallableRequest) => {
     const customToken = await auth.createCustomToken(uid);
     return { customToken, uid };
   } catch (err: any) {
-    throw new HttpsError("unauthenticated", "Invalid or expired ID token.");
+    logger.error("exchangeToken verifyIdToken failed", err);
+    const message = err?.message || "Unknown error";
+    throw new HttpsError("unauthenticated", `ID token verification failed: ${message}`);
   }
 });

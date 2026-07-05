@@ -30,10 +30,12 @@ function AuthHandler() {
 
         await signInWithCustomToken(auth, customToken);
         router.replace(redirect);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Auth exchange failed:", err);
-        setStatus("Session verification failed. Redirecting to login...");
-        setTimeout(() => router.replace("/login"), 1500);
+        const msg = err?.message || "Unknown error";
+        const detail = err?.details || "";
+        setStatus(`Session verification failed: ${msg} ${detail}. Redirecting to login...`);
+        setTimeout(() => router.replace("/login"), 5000);
       }
     }
 
