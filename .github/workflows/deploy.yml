@@ -33,6 +33,6 @@ jobs:
           protocol: ftp
           port: 21
           local-dir: ./out/
-          server-dir: /public_html/portal.robotgenie.in/
+          server-dir: /domains/portal.robotgenie.in/public_html/
           timeout: 120000
           security: loose
