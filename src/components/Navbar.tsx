@@ -58,7 +58,7 @@ export default function Navbar() {
     ]);
     await signOut(auth);
     closeMenu();
-    router.push("/");
+    window.location.href = "https://www.robotgenie.in/login/";
   }
 
   const userInitial = userData?.fullName

@@ -168,13 +168,8 @@ export default function TopNavbar({ title, items, brand, role, onMenuClick, curr
 
   const handleLogout = useCallback(async () => {
     await signOut(auth);
-    const r = window.location.pathname.startsWith("/employee")
-      ? "employee"
-      : window.location.pathname.startsWith("/paid-user")
-      ? "paid-user"
-      : "admin";
-    router.push(`/login?role=${r}`);
-  }, [router]);
+    window.location.href = "https://www.robotgenie.in/login/";
+  }, []);
 
   async function handlePhotoUpload(file: File) {
     if (!currentUser) return;

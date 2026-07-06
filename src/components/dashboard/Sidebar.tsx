@@ -34,9 +34,8 @@ export default function Sidebar({ items, collapsed, onToggle, brand, role }: Sid
 
   const handleLogout = useCallback(async () => {
     await signOut(auth);
-    const role = items[0]?.href.startsWith("/employee") ? "employee" : "admin";
-    router.push(`/login?role=${role}`);
-  }, [router, items]);
+    window.location.href = "https://www.robotgenie.in/login/";
+  }, []);
 
   const active = (href: string) => {
     const qIdx = href.indexOf('?');

@@ -41,8 +41,7 @@ export default function MobileSidebar({ items, open, onClose, brand, role }: Mob
 
   const handleLogout = async () => {
     await signOut(auth);
-    const role = items[0]?.href.startsWith("/employee") ? "employee" : "admin";
-    router.push(`/login?role=${role}`);
+    window.location.href = "https://www.robotgenie.in/login/";
   };
 
   return (
