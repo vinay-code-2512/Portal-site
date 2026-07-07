@@ -18,7 +18,11 @@ const POSITION_DEADZONE = 2;
 export default function CustomCursor() {
   const [position, setPosition] = useState({ x: -100, y: -100 });
   const [isHovering, setIsHovering] = useState(false);
-  const [isTouchDevice, setIsTouchDevice] = useState(true);
+  const [isTouchDevice, setIsTouchDevice] = useState(() => {
+    if (typeof window === "undefined") return true;
+    if (!window.matchMedia) return false;
+    return window.matchMedia("(pointer: coarse)").matches;
+  });
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
   const ghostsRef = useRef<Ghost[]>([]);

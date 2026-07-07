@@ -24,6 +24,7 @@ export interface ClassEntry {
   completed?: boolean;
   completedAt?: any;
   thumbnailUrl?: string;
+  isLiveNow?: boolean;
   questions?: string[];
   liveVideoUrl?: string;
   liveVideoName?: string;
@@ -63,6 +64,7 @@ export async function addClass(data: {
   order?: number;
   questions?: string[];
   thumbnailUrl?: string;
+  isLiveNow?: boolean;
   liveVideoUrl?: string;
   liveVideoName?: string;
   liveThumbnailUrl?: string;
@@ -89,6 +91,7 @@ export async function updateClass(id: string, data: {
   order?: number;
   questions?: string[];
   thumbnailUrl?: string;
+  isLiveNow?: boolean;
   liveVideoUrl?: string;
   liveVideoName?: string;
   liveThumbnailUrl?: string;
@@ -188,6 +191,7 @@ export async function createBulkClasses(
     videoName?: string;
     questions?: string[];
     thumbnailUrl?: string;
+    isLiveNow?: boolean;
     liveVideoUrl?: string;
     liveVideoName?: string;
     liveThumbnailUrl?: string;
@@ -224,6 +228,7 @@ export async function createBulkClasses(
         videoName: data.videoName,
         questions: data.questions,
         thumbnailUrl: data.thumbnailUrl,
+        isLiveNow: data.isLiveNow,
         liveVideoUrl: data.liveVideoUrl,
         liveVideoName: data.liveVideoName,
         liveThumbnailUrl: data.liveThumbnailUrl,

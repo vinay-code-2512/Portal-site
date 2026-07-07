@@ -61,6 +61,7 @@ export default function AdminStudents() {
   const [bulkBatchName, setBulkBatchName] = useState("");
   const [bulkLink, setBulkLink] = useState("");
   const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkIsLiveNow, setBulkIsLiveNow] = useState(false);
   const [bulkVideoFileName, setBulkVideoFileName] = useState("");
   const [bulkVideoName, setBulkVideoName] = useState("");
   const [bulkThumbnailUrl, setBulkThumbnailUrl] = useState("");
@@ -779,6 +780,7 @@ export default function AdminStudents() {
                           videoName: bulkVideoName || undefined,
                           questions: bulkQuestions.filter((q) => q.trim()).length > 0 ? bulkQuestions.filter((q) => q.trim()) : undefined,
                           thumbnailUrl: bulkThumbnailUrl || undefined,
+                          isLiveNow: bulkIsLiveNow || undefined,
                           liveVideoUrl: bulkLiveVideoUrl || undefined,
                           liveVideoName: bulkLiveVideoName || undefined,
                           liveThumbnailUrl: bulkLiveThumbnailUrl || undefined,
@@ -793,6 +795,7 @@ export default function AdminStudents() {
                       }
 
                       setBulkShowForm(false);
+                      setBulkIsLiveNow(false);
                       setBulkTitle("");
                       setBulkBatchName("");
                       setBulkLink("");
@@ -844,6 +847,21 @@ export default function AdminStudents() {
                       <span className="text-sm text-zinc-700 font-medium">Live</span>
                     </label>
                   </div>
+
+                  {bulkType === "live" && (
+                    <label className="flex items-center gap-2 cursor-pointer select-none py-1.5 px-3 rounded-xl bg-red-50/50 border border-red-100">
+                      <input
+                        type="checkbox"
+                        checked={bulkIsLiveNow}
+                        onChange={(e) => setBulkIsLiveNow(e.target.checked)}
+                        className="w-4 h-4 rounded text-red-600 focus:ring-red-500"
+                      />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white text-[11px] font-bold shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-[blink_1.5s_ease-in-out_infinite]" />
+                        Live Now
+                      </span>
+                    </label>
+                  )}
 
                   <div className="flex gap-4">
                     <div className="flex-1">

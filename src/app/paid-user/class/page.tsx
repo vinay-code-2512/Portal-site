@@ -275,6 +275,7 @@ export default function PaidUserClassPage() {
   const isLive = classType === "live";
   const HeadingIcon = isLive ? Monitor : Video;
   const headingText = isLive ? "Live Class" : "Recorded Class";
+  const liveNowClass = isLive ? classes.find((c) => c.isLiveNow) : null;
 
   const sortClasses = (list: ClassEntry[]) =>
     list.sort((a, b) => (a.createdAt?.toMillis?.() ?? 0) - (b.createdAt?.toMillis?.() ?? 0));
@@ -360,17 +361,40 @@ export default function PaidUserClassPage() {
 
   return (
     <div className="space-y-2 pb-8 pt-1 sm:pt-2">
-      <div className="hrms-glass rounded-xl p-2 border border-[var(--border-light)] bg-white/55 backdrop-blur-md shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isLive ? "bg-emerald-500" : "bg-violet-500"}`}>
-            <HeadingIcon className="w-3 h-3 text-white" />
+      <div className="hrms-glass rounded-2xl p-4 border border-[var(--border-light)] bg-white/55 backdrop-blur-md shadow-md">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              isLive
+                ? "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm shadow-emerald-200"
+                : "bg-gradient-to-br from-violet-400 to-violet-600 shadow-sm shadow-violet-200"
+            }`}>
+              <HeadingIcon className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-zinc-800">{headingText}</h2>
+              <p className="text-[11px] text-zinc-400 font-medium">
+                {isLive ? "Your upcoming live sessions" : "Access your recorded classes"}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xs font-black text-zinc-800">{headingText}</h2>
-            <p className="text-[8px] text-zinc-500">
-              {isLive ? "Your upcoming live sessions" : "Access your recorded classes"}
-            </p>
-          </div>
+          {isLive && !liveNowClass?.link && (
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-red-400/80 to-rose-400/80 text-white/90 text-sm font-black leading-none shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-white/70" />
+              LIVE
+            </span>
+          )}
+          {isLive && liveNowClass?.link && (
+            <a
+              href={liveNowClass.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-red-500 to-rose-500 text-white text-sm font-black leading-none shadow-md shadow-red-200 hover:shadow-lg hover:shadow-red-300 hover:scale-105 transition-all duration-200 animate-[blink_1.5s_ease-in-out_infinite]"
+            >
+              <span className="w-2 h-2 rounded-full bg-white shadow-sm" />
+              LIVE
+            </a>
+          )}
         </div>
       </div>
 

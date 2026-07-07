@@ -224,6 +224,7 @@ function ClassTab({ student }: { student: StudentData }) {
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [formError, setFormError] = useState("");
+  const [formIsLiveNow, setFormIsLiveNow] = useState(false);
   const [formQuestions, setFormQuestions] = useState<string[]>([]);
   const [openQuestionId, setOpenQuestionId] = useState<string | null>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -265,6 +266,7 @@ function ClassTab({ student }: { student: StudentData }) {
       };
       if (validQuestions.length > 0) classData.questions = validQuestions;
       if (thumbnailUrl) classData.thumbnailUrl = thumbnailUrl;
+      if (isLive && formIsLiveNow) classData.isLiveNow = true;
       if (liveVideoUrl) {
         classData.liveVideoUrl = liveVideoUrl;
         classData.liveVideoName = liveVideoName || undefined;
@@ -279,6 +281,7 @@ function ClassTab({ student }: { student: StudentData }) {
       setTitle("");
       setLink("");
       setFormQuestions([]);
+      setFormIsLiveNow(false);
       setVideoUploading(false);
       setVideoFileName("");
       setVideoName("");
@@ -306,6 +309,7 @@ function ClassTab({ student }: { student: StudentData }) {
       const updateData: any = { title: title.trim(), link: link.trim(), videoName: videoName || undefined };
       if (validQuestions.length > 0) updateData.questions = validQuestions;
       if (thumbnailUrl) updateData.thumbnailUrl = thumbnailUrl;
+      updateData.isLiveNow = formIsLiveNow;
       if (liveVideoUrl) {
         updateData.liveVideoUrl = liveVideoUrl;
         updateData.liveVideoName = liveVideoName || undefined;
@@ -328,6 +332,7 @@ function ClassTab({ student }: { student: StudentData }) {
       setTitle("");
       setLink("");
       setFormQuestions([]);
+      setFormIsLiveNow(false);
       setVideoUploading(false);
       setVideoFileName("");
       setVideoName("");
@@ -360,6 +365,7 @@ function ClassTab({ student }: { student: StudentData }) {
     setVideoName(c.videoName || "");
     setThumbnailUrl(c.thumbnailUrl || "");
     setFormQuestions(c.questions ? [...c.questions] : []);
+    setFormIsLiveNow(c.isLiveNow || false);
     setLiveVideoUrl(c.liveVideoUrl || "");
     setLiveVideoName(c.liveVideoName || "");
     setLiveThumbnailUrl(c.liveThumbnailUrl || "");
@@ -394,7 +400,7 @@ function ClassTab({ student }: { student: StudentData }) {
             <h2 className="text-xl font-black text-zinc-800">{headingText}</h2>
           </div>
           <button
-            onClick={() => { setShowForm(!showForm); setEditId(null); setTitle(""); setLink(""); setFormQuestions([]); setVideoUploading(false); setVideoFileName(""); setVideoName(""); setThumbnailUrl(""); setThumbnailUploading(false); }}
+            onClick={() => { setShowForm(!showForm); setEditId(null); setTitle(""); setLink(""); setFormQuestions([]); setFormIsLiveNow(false); setVideoUploading(false); setVideoFileName(""); setVideoName(""); setThumbnailUrl(""); setThumbnailUploading(false); }}
             className="min-h-[36px] px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
           >
             {showForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
@@ -413,6 +419,22 @@ function ClassTab({ student }: { student: StudentData }) {
               className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-light)] text-sm font-medium focus:outline-none focus:border-indigo-300"
               required
             />
+
+            {isLive && (
+              <label className="flex items-center gap-2 cursor-pointer select-none py-1.5 px-3 rounded-xl bg-red-50/50 border border-red-100">
+                <input
+                  type="checkbox"
+                  checked={formIsLiveNow}
+                  onChange={(e) => setFormIsLiveNow(e.target.checked)}
+                  className="w-4 h-4 rounded text-red-600 focus:ring-red-500"
+                />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white text-[11px] font-bold shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-[blink_1.5s_ease-in-out_infinite]" />
+                  Live Now
+                </span>
+              </label>
+            )}
+
             <div className="space-y-1.5">
               <input
                 type="url"
@@ -595,13 +617,14 @@ function ClassTab({ student }: { student: StudentData }) {
                 Generating video thumbnail...
               </span>
             )}
-            {isLive && liveThumbnailUrl && !liveThumbnailUploading && (
-              <div className="flex items-center gap-2 text-xs text-emerald-600 font-medium">
-                <Image className="w-3.5 h-3.5" />
-                Video thumbnail ready
-              </div>
-            )}
-            <div className="border-t border-[var(--border-light)] pt-3 space-y-3">
+              {isLive && liveThumbnailUrl && !liveThumbnailUploading && (
+                <div className="flex items-center gap-2 text-xs text-emerald-600 font-medium">
+                  <Image className="w-3.5 h-3.5" />
+                  Video thumbnail ready
+                </div>
+              )}
+
+              <div className="border-t border-[var(--border-light)] pt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <h5 className="text-xs font-bold text-zinc-600">Questions ({formQuestions.length})</h5>
                 <button
@@ -641,7 +664,7 @@ function ClassTab({ student }: { student: StudentData }) {
               </button>
               <button
                 type="button"
-                onClick={() => { setShowForm(false); setEditId(null); setTitle(""); setLink(""); setFormQuestions([]); setVideoUploading(false); setVideoFileName(""); setVideoName(""); setThumbnailUrl(""); setThumbnailUploading(false); }}
+                onClick={() => { setShowForm(false); setEditId(null); setTitle(""); setLink(""); setFormQuestions([]); setFormIsLiveNow(false); setVideoUploading(false); setVideoFileName(""); setVideoName(""); setThumbnailUrl(""); setThumbnailUploading(false); }}
                 className="min-h-[36px] px-4 rounded-xl bg-zinc-100 text-zinc-600 text-xs font-bold hover:bg-zinc-200 transition-all cursor-pointer"
               >
                 Cancel
@@ -689,8 +712,13 @@ function ClassTab({ student }: { student: StudentData }) {
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <h4 className="text-sm font-bold text-zinc-800">
+                    <h4 className="text-sm font-bold text-zinc-800 flex items-center gap-2">
                       {c.title}
+                      {c.isLiveNow && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[8px] font-bold leading-none animate-[blink_1.5s_ease-in-out_infinite]">
+                          LIVE
+                        </span>
+                      )}
                     </h4>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Calendar className="w-3 h-3 text-zinc-400" />
