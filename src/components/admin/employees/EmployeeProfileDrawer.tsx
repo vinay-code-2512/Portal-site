@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { X, User, Briefcase, Clock, CalendarOff, DollarSign, Loader2, ExternalLink, FileSpreadsheet } from "lucide-react";
+import { X, User, Briefcase, Clock, CalendarOff, IndianRupee, Loader2, ExternalLink, FileSpreadsheet } from "lucide-react";
 import { useEmployeeProfile } from "@/hooks/useEmployeeProfile";
 import type { EmployeeData } from "@/lib/employees";
 
@@ -257,7 +257,7 @@ export default function EmployeeProfileDrawer({ uid, onClose }: EmployeeProfileD
               {/* Section 5: Payroll Summary */}
               <div className="hrms-glass bg-white/55 rounded-[20px] p-5 border border-[var(--border-light)] space-y-4">
                 <div className="flex items-center gap-2 border-b border-[var(--border-light)] pb-2">
-                  <DollarSign className="w-4 h-4 text-[var(--color-primary-light)]" />
+                  <IndianRupee className="w-4 h-4 text-[var(--color-primary-light)]" />
                   <h4 className="text-xs font-bold text-[#111827] uppercase tracking-wider">
                     Payroll Summary
                   </h4>

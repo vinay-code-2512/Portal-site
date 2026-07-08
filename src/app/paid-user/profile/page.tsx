@@ -7,7 +7,7 @@ import { updateProfile, updatePassword } from "firebase/auth";
 import { auth, storage } from "@/lib/firebase";
 import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
 import {
-  Mail, Phone, Calendar, BookOpen, IndianRupee, CreditCard, CheckCircle, Shield, Tag, Camera, Loader2, Lock, Eye, EyeOff
+  Mail, Phone, BookOpen, IndianRupee, CreditCard, CheckCircle, Shield, Tag, Camera, Loader2, Lock, Eye, EyeOff
 } from "lucide-react";
 
 export default function PaidUserProfilePage() {
@@ -298,10 +298,6 @@ export default function PaidUserProfilePage() {
 
                   <div className="grid grid-cols-3 gap-3 mb-3">
                     <div className="p-2.5 rounded-lg bg-white/60 border border-[var(--border-light)]">
-                      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Total Cost</p>
-                      <p className="text-sm font-black text-zinc-800 mt-0.5">₹{groupTotalFee.toLocaleString("en-IN")}</p>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-white/60 border border-[var(--border-light)]">
                       <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Total Paid</p>
                       <p className="text-sm font-black text-emerald-600 mt-0.5">₹{groupTotalPaid.toLocaleString("en-IN")}</p>
                     </div>
@@ -358,9 +354,9 @@ export default function PaidUserProfilePage() {
               </span>
             </div>
             {courseFee > 0 && (
-              <div className="flex items-center justify-between p-4 rounded-xl bg-amber-50 border border-amber-200">
-                <span className="text-sm font-bold text-amber-700">Course Fee</span>
-                <span className="text-lg font-black text-amber-700">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-indigo-50 border border-indigo-200">
+                <span className="text-sm font-bold text-indigo-700">Course Fee</span>
+                <span className="text-lg font-black text-indigo-700">
                   ₹{courseFee.toLocaleString("en-IN")}
                 </span>
               </div>
@@ -369,18 +365,7 @@ export default function PaidUserProfilePage() {
         )}
       </div>
 
-      <div className="text-center">
-        <span className="text-[10px] text-zinc-400">
-          <Calendar className="w-3 h-3 inline mr-1" />
-          Member since{" "}
-          {currentUser?.metadata?.creationTime
-            ? new Date(currentUser.metadata.creationTime).toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              })
-            : "now"}
-        </span>
-      </div>
+
 
       <div className="hrms-glass rounded-[20px] p-5 sm:p-6 border border-[var(--border-light)] bg-white/55 backdrop-blur-md shadow-sm">
         <h3 className="text-sm font-black text-zinc-700 mb-4 flex items-center gap-2">

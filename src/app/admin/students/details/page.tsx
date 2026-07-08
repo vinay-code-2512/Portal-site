@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Mail, BookOpen, IndianRupee, User, Phone, Shield, Tag, Calendar, Plus, X, Link, Trash2, Edit3, Save, Monitor, Video, Image, Loader2, Upload, Lock, Eye, EyeOff, ChevronDown, DollarSign } from "lucide-react";
+import { Mail, BookOpen, IndianRupee, User, Phone, Shield, Tag, Calendar, Plus, X, Link, Trash2, Edit3, Save, Monitor, Video, Image, Loader2, Upload, Lock, Eye, EyeOff, ChevronDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getClassesByUserId, addClass, updateClass, deleteClass, uploadClassVideo, generateVideoThumbnail, uploadClassThumbnail, uploadClassFile, isStorageUrl, type ClassEntry } from "@/lib/classes";
 import { updateEnrollment, createEnrollment } from "@/lib/enrollments";
@@ -73,8 +73,9 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
     setEditSaving(true);
     setEditError("");
     try {
-      const totalFeeNum = editTotalFee ? Number(editTotalFee) : undefined;
-      await updateEnrollment(editEnrollId, { amount, paymentType: editPaymentType, totalFee: totalFeeNum });
+      const updateData: { amount: number; paymentType: string; totalFee?: number } = { amount, paymentType: editPaymentType };
+      if (editTotalFee) updateData.totalFee = Number(editTotalFee);
+      await updateEnrollment(editEnrollId, updateData);
       await updateDoc(doc(db, "users", student.userId), {
         paymentType: editPaymentType,
         updatedAt: Timestamp.now(),
@@ -187,7 +188,7 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
                       {enroll.courseName}
                     </span>
                     <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-bold">
-                      <IndianRupee className="w-3 h-3" />
+                      <IndianRupee className="w-3 h-3 text-emerald-600" />
                       {enroll.amount.toLocaleString("en-IN")}
                       {enroll.totalFee ? (
                         <span className="text-emerald-400"> / {enroll.totalFee.toLocaleString("en-IN")}</span>
@@ -202,7 +203,7 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
                     </button>
                     <button
                       onClick={() => {
-                        setAddForCourse(addForCourse === enroll.courseName ? null : enroll.courseName);
+                        setAddForCourse(addForCourse === enroll.id ? null : enroll.id);
                         setAddAmount("");
                         setAddPaymentType("emi");
                         setAddTotalFee(enroll.totalFee ? String(enroll.totalFee) : "");
@@ -211,7 +212,7 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
                       className="p-1.5 rounded-lg hover:bg-emerald-50 text-zinc-400 hover:text-emerald-600 transition-colors"
                       title="Add payment"
                     >
-                      <DollarSign className="w-3.5 h-3.5" />
+                      <IndianRupee className="w-3.5 h-3.5" />
                     </button>
                     {editEnrollId === enroll.id && (
                       <div className="w-full mt-1 p-3 rounded-xl bg-white/60 border border-[var(--border-light)] space-y-2">
@@ -230,7 +231,7 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Payment</label>
+                          <label className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Payment</label>
                             <select
                               value={editPaymentType}
                               onChange={(e) => setEditPaymentType(e.target.value as "full" | "emi")}
@@ -241,7 +242,7 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
                             </select>
                           </div>
                           <div className="w-24">
-                            <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Total Fee</label>
+                          <label className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Total Fee</label>
                             <input
                               type="number"
                               value={editTotalFee}
@@ -271,15 +272,15 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
                       </div>
                     )}
                   </div>
-                  {addForCourse === enroll.courseName && (
-                    <div className="ml-9 p-3 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2">
+                  {addForCourse === enroll.id && (
+                    <div className="ml-9 p-3 rounded-xl bg-white border border-emerald-200 space-y-2">
                       {addError && (
                         <p className="text-xs text-red-500">{addError}</p>
                       )}
-                      <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Add Payment for {enroll.courseName}</p>
+                      <p className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">Add Payment for {enroll.courseName}</p>
                       <div className="flex items-center gap-3">
                         <div className="flex-1">
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Amount Paid</label>
+                          <label className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Amount Paid</label>
                           <input
                             type="number"
                             value={addAmount}
@@ -319,9 +320,8 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
                             setAddSaving(true);
                             setAddError("");
                             try {
-                              const totalFeeNum = addTotalFee ? Number(addTotalFee) : undefined;
                               const courseId = enroll.courseName.toLowerCase().replace(/\s+/g, "-");
-                              await createEnrollment({
+                              const enrollmentData: any = {
                                 userId: student.userId,
                                 userName: student.userName,
                                 userEmail: student.userEmail,
@@ -329,8 +329,9 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
                                 courseName: enroll.courseName,
                                 amount: amountNum,
                                 paymentType: addPaymentType,
-                                totalFee: totalFeeNum,
-                              });
+                              };
+                              if (addTotalFee) enrollmentData.totalFee = Number(addTotalFee);
+                              await createEnrollment(enrollmentData);
                               setAddForCourse(null);
                               setAddAmount("");
                               onRefresh();

@@ -11,7 +11,7 @@ import {
   Calendar,
   Clock,
   CreditCard,
-  DollarSign,
+  IndianRupee,
   FileText,
   MapPin,
   Phone,
@@ -259,7 +259,7 @@ function EmployeeDetails({ employeeId, activeTab }: { employeeId: string; active
 
             <SectionCard icon={<CreditCard className="w-4 h-4" />} title="Payroll Info">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <InfoItem icon={<DollarSign className="w-3.5 h-3.5" />} label="Salary" value={emp.salary ? `$${Number(emp.salary).toLocaleString()}` : "—"} />
+                <InfoItem icon={<IndianRupee className="w-3.5 h-3.5" />} label="Salary" value={emp.salary ? `₹${Number(emp.salary).toLocaleString("en-IN")}` : "—"} />
                 <InfoItem icon={<CreditCard className="w-3.5 h-3.5" />} label="Bank Account" value={emp.bankAccountNumber ? `****${String(emp.bankAccountNumber).slice(-4)}` : "—"} />
                 <InfoItem icon={<Hash className="w-3.5 h-3.5" />} label="IFSC Code" value={emp.ifscCode || "—"} />
                 <InfoItem icon={<FileText className="w-3.5 h-3.5" />} label="PAN Number" value={emp.panNumber || "—"} />

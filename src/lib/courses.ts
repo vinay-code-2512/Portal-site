@@ -22,5 +22,6 @@ export interface Batch {
 
 export const BATCHES: Batch[] = [
   { id: "june-august", name: "June to August" },
+  { id: "july-august", name: "July to August" },
   { id: "sep-october", name: "Sep to October" },
 ];

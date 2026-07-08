@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, User, Briefcase, Clock, CalendarOff, DollarSign, FileSpreadsheet, ExternalLink, Loader2, Video } from "lucide-react";
+import { ArrowLeft, User, Briefcase, Clock, CalendarOff, IndianRupee, FileSpreadsheet, ExternalLink, Loader2, Video } from "lucide-react";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useEmployeeProfile } from "@/hooks/useEmployeeProfile";
@@ -217,7 +217,7 @@ function ProfileContent() {
         {/* Section 5: Payroll Summary */}
         <div className="hrms-glass bg-white/55 rounded-[20px] p-5 border border-[var(--border-light)] space-y-4">
           <div className="flex items-center gap-2 border-b border-[var(--border-light)] pb-2">
-            <DollarSign className="w-4 h-4 text-[var(--color-primary-light)]" />
+            <IndianRupee className="w-4 h-4 text-[var(--color-primary-light)]" />
             <h4 className="text-xs font-bold text-[#111827] uppercase tracking-wider">Payroll Summary</h4>
           </div>
           <div className="space-y-2 text-xs">

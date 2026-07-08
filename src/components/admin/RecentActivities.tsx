@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { LogIn, LogOut, Calendar, DollarSign, UserPlus, Activity } from "lucide-react";
+import { LogIn, LogOut, Calendar, IndianRupee, UserPlus, Activity } from "lucide-react";
 
 interface ActivityItem {
   id: string;
@@ -29,7 +29,7 @@ function getActivityIcon(type: string, description: string) {
     return <Calendar className="w-3.5 h-3.5 text-amber-500" />;
   }
   if (descLower.includes("payroll") || typeLower.includes("payroll")) {
-    return <DollarSign className="w-3.5 h-3.5 text-[var(--color-primary-light)]" />;
+    return <IndianRupee className="w-3.5 h-3.5 text-[var(--color-primary-light)]" />;
   }
   if (descLower.includes("added") || descLower.includes("new employee") || typeLower.includes("employee")) {
     return <UserPlus className="w-3.5 h-3.5 text-indigo-500" />;

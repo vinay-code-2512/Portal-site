@@ -1,12 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Users, DollarSign, Settings } from "lucide-react";
+import { Users, IndianRupee, Settings } from "lucide-react";
 import Link from "next/link";
 
 const actions = [
   {
-    icon: <DollarSign className="w-4 h-4" />,
+    icon: <IndianRupee className="w-4 h-4" />,
     label: "Open Payroll Admin",
     href: "/admin/payroll",
   },

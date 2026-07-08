@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { collection, query, where, getDocs, deleteDoc, doc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { ref, listAll, deleteObject } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 import { GraduationCap, Mail, IndianRupee, Search, Plus, X, Phone, CheckCircle, Loader2, User as UserIcon, Lock, Trash2, BookOpen, Video, Monitor, Upload, Image, Save } from "lucide-react";
 import { createPaidUser } from "@/lib/admin/paidUserService";
 import { createEnrollment } from "@/lib/enrollments";
@@ -44,6 +45,8 @@ export default function AdminStudents() {
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState<{ email: string; password: string } | null>(null);
+  const [allottedEmployee, setAllottedEmployee] = useState("");
+  const [employees, setEmployees] = useState<{ uid: string; fullName: string }[]>([]);
 
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [selectedClassType, setSelectedClassType] = useState<"all" | "live" | "recorded">("all");
@@ -77,6 +80,18 @@ export default function AdminStudents() {
   const [bulkFileName, setBulkFileName] = useState("");
   const [bulkFileUploading, setBulkFileUploading] = useState(false);
   const bulkFileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    async function fetchEmployees() {
+      try {
+        const snap = await getDocs(
+          query(collection(db, "users"), where("role", "==", "employee"), where("status", "==", "active"))
+        );
+        setEmployees(snap.docs.map((d) => ({ uid: d.id, fullName: d.data().fullName || d.data().name || "" })));
+      } catch { /* non-critical */ }
+    }
+    fetchEmployees();
+  }, []);
 
   useEffect(() => {
     async function fetchStudents() {
@@ -155,7 +170,7 @@ export default function AdminStudents() {
 
   const handleDelete = async (e: React.MouseEvent, uid: string) => {
     e.stopPropagation();
-    const confirm = window.confirm("Delete this paid user? This cannot be undone.");
+    const confirm = window.confirm("Delete this paid user and all associated data? This cannot be undone.");
     if (!confirm) return;
 
     try {
@@ -165,7 +180,29 @@ export default function AdminStudents() {
       );
       await Promise.all(enrollmentSnap.docs.map((d) => deleteDoc(doc(db, "enrollments", d.id))));
 
-      // 2. Delete Auth user via cloud function — throws on failure, stopping the process
+      // 2. Delete class_answers and classes
+      try {
+        const answersSnap = await getDocs(
+          query(collection(db, "class_answers"), where("userId", "==", uid))
+        );
+        await Promise.all(answersSnap.docs.map((a) => deleteDoc(a.ref)));
+      } catch { /* class_answers query may not have index */ }
+      const classesSnap = await getDocs(
+        query(collection(db, "classes"), where("userId", "==", uid))
+      );
+      await Promise.all(classesSnap.docs.map((d) => deleteDoc(d.ref)));
+
+      // 3. Delete storage files (videos, thumbnails)
+      try {
+        const videoList = await listAll(ref(storage, `class_videos/${uid}`));
+        await Promise.all(videoList.items.map((item) => deleteObject(item)));
+      } catch { /* folder may not exist */ }
+      try {
+        const thumbList = await listAll(ref(storage, `class_thumbnails/${uid}`));
+        await Promise.all(thumbList.items.map((item) => deleteObject(item)));
+      } catch { /* folder may not exist */ }
+
+      // 4. Delete Auth user via cloud function — throws on failure, stopping the process
       if (currentUser) {
         const idToken = await currentUser.getIdToken();
         const { deleteUser } = await import("@/lib/adminFunctions");
@@ -180,10 +217,10 @@ export default function AdminStudents() {
         }).catch(() => {});
       }
 
-      // 3. Delete Firestore user doc
+      // 5. Delete Firestore user doc
       await deleteDoc(doc(db, "users", uid));
 
-      // 4. Update UI
+      // 6. Update UI
       setStudents((prev) => prev.filter((s) => s.userId !== uid));
     } catch (err: any) {
       alert(`Error: ${err.message}`);
@@ -231,7 +268,9 @@ export default function AdminStudents() {
     const selectedCourse = COURSES.find((c) => c.name === courseName.trim());
     setCreating(true);
     try {
-      const result = await createPaidUser(fullName.trim(), email.trim(), phone.trim(), password, classType, batchName.trim() || undefined);
+      const adminIdToken = await currentUser?.getIdToken();
+      const allottedEmp = allottedEmployee ? employees.find((e) => e.uid === allottedEmployee) : undefined;
+      const result = await createPaidUser(fullName.trim(), email.trim(), phone.trim(), password, classType, batchName.trim() || undefined, adminIdToken, allottedEmp?.uid, allottedEmp?.fullName);
       if (result.success) {
         const totalFeeNum = Number(totalCost);
 
@@ -339,6 +378,7 @@ export default function AdminStudents() {
     setPaymentType("full");
     setFormError("");
     setFormSuccess(null);
+    setAllottedEmployee("");
   }
 
   const inputClass = "w-full min-h-[44px] px-4 rounded-xl bg-white/[0.04] border border-white/10 text-sm text-zinc-700 placeholder-zinc-400 focus:outline-none focus:border-indigo-500/40 transition-colors";
@@ -478,6 +518,20 @@ export default function AdminStudents() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Allotted Employee</label>
+                <select
+                  value={allottedEmployee}
+                  onChange={(e) => setAllottedEmployee(e.target.value)}
+                  className={`${inputClass} appearance-none cursor-pointer`}
+                >
+                  <option value="">Select an employee</option>
+                  {employees.map((emp) => (
+                    <option key={emp.uid} value={emp.uid}>{emp.fullName}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1.5">
