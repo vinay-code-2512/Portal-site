@@ -40,6 +40,7 @@ export default function MobileSidebar({ items, open, onClose, brand, role }: Mob
   };
 
   const handleLogout = () => {
+    sessionStorage.setItem("rg_logging_out", "true");
     window.location.href = "https://www.robotgenie.in/login/";
     signOut(auth);
   };

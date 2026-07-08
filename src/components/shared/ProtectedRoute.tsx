@@ -21,6 +21,7 @@ export default function ProtectedRoute({ children, allowedRoles, fallback }: Pro
   useEffect(() => {
     if (authLoading || permLoading) return;
     if (!currentUser) {
+      if (typeof window !== "undefined" && sessionStorage.getItem("rg_logging_out")) return;
       const role = pathname.startsWith("/employee") ? "employee" : "admin";
       router.replace(`/login?role=${role}`);
     }

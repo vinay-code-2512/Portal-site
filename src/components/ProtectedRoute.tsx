@@ -11,6 +11,7 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!loading && !currentUser) {
+      if (typeof window !== "undefined" && sessionStorage.getItem("rg_logging_out")) return;
       router.push("/login");
     }
   }, [loading, currentUser, router]);

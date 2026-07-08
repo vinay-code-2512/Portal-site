@@ -167,6 +167,7 @@ export default function TopNavbar({ title, items, brand, role, onMenuClick, curr
   };
 
   const handleLogout = useCallback(() => {
+    sessionStorage.setItem("rg_logging_out", "true");
     window.location.href = "https://www.robotgenie.in/login/";
     signOut(auth);
   }, []);

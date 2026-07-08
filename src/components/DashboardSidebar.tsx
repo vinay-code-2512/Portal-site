@@ -35,6 +35,7 @@ export default function DashboardSidebar({ open, onClose }: DashboardSidebarProp
   const { currentUser } = useAuth();
 
   const handleLogout = useCallback(() => {
+    sessionStorage.setItem("rg_logging_out", "true");
     window.location.href = "https://www.robotgenie.in/login/";
     onClose();
     signOut(auth);

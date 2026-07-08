@@ -33,6 +33,7 @@ export default function Sidebar({ items, collapsed, onToggle, brand, role }: Sid
   const router = useRouter();
 
   const handleLogout = useCallback(() => {
+    sessionStorage.setItem("rg_logging_out", "true");
     window.location.href = "https://www.robotgenie.in/login/";
     signOut(auth);
   }, []);
