@@ -510,7 +510,7 @@ export default function AdminStudents() {
 
               {(paymentType === "full" || paymentType === "emi") && (
                 <div className="space-y-1.5">
-                  <label className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Total Cost</label>
+                  <label className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Course Fee</label>
                   <div className="relative">
                     <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
                     <input
