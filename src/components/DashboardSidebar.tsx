@@ -37,7 +37,7 @@ export default function DashboardSidebar({ open, onClose }: DashboardSidebarProp
   const handleLogout = useCallback(async () => {
     await signOut(auth);
     onClose();
-    window.location.href = "https://www.robotgenie.in/login/";
+    window.location.href = "/login";
   }, [onClose, router]);
 
   const isActive = (href: string) => pathname === href;

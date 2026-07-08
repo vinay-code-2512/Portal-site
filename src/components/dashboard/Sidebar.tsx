@@ -34,7 +34,7 @@ export default function Sidebar({ items, collapsed, onToggle, brand, role }: Sid
 
   const handleLogout = useCallback(async () => {
     await signOut(auth);
-    window.location.href = "https://www.robotgenie.in/login/";
+    window.location.href = "/login";
   }, []);
 
   const active = (href: string) => {

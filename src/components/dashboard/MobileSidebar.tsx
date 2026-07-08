@@ -41,7 +41,7 @@ export default function MobileSidebar({ items, open, onClose, brand, role }: Mob
 
   const handleLogout = async () => {
     await signOut(auth);
-    window.location.href = "https://www.robotgenie.in/login/";
+    window.location.href = "/login";
   };
 
   return (
