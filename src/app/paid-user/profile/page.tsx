@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getEnrollmentsByUserId, type Enrollment } from "@/lib/enrollments";
 import { updateProfile, updatePassword } from "firebase/auth";
@@ -14,6 +14,7 @@ export default function PaidUserProfilePage() {
   const { currentUser, userData } = useAuth();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [enrollError, setEnrollError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const uploadMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -27,12 +28,23 @@ export default function PaidUserProfilePage() {
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState("");
 
-  useEffect(() => {
+  function fetchEnrollments() {
     if (!currentUser) return;
+    setEnrollError("");
     getEnrollmentsByUserId(currentUser.uid)
       .then((data) => setEnrollments(data))
-      .catch(() => {})
+      .catch((err) => {
+        const msg = err?.message || "Failed to load payment info";
+        console.error("Enrollment fetch error:", msg);
+        setEnrollError(msg);
+      })
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    fetchEnrollments();
+    window.addEventListener("focus", fetchEnrollments);
+    return () => window.removeEventListener("focus", fetchEnrollments);
   }, [currentUser]);
 
   useEffect(() => {
@@ -130,6 +142,17 @@ export default function PaidUserProfilePage() {
   const photoURL = userData?.photoURL || currentUser?.photoURL || "";
   const initial = fullName.charAt(0).toUpperCase();
   const totalPaid = enrollments.reduce((sum, e) => sum + e.amount, 0);
+  const courseFee = enrollments.reduce((max, e) => e.totalFee ? Math.max(max, e.totalFee) : max, 0);
+
+  const groupedEnrollments = useMemo(() => {
+    const map = new Map<string, { courseName: string; enrollments: Enrollment[] }>();
+    for (const e of enrollments) {
+      const key = e.courseName;
+      if (!map.has(key)) map.set(key, { courseName: key, enrollments: [] });
+      map.get(key)!.enrollments.push(e);
+    }
+    return Array.from(map.values());
+  }, [enrollments]);
 
   const initials = fullName
     ? fullName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -208,21 +231,21 @@ export default function PaidUserProfilePage() {
             <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
               <BookOpen className="w-3 h-3" /> Courses Enrolled
             </p>
-            <p className="text-lg font-black text-zinc-800 mt-1">{enrollments.length}</p>
+            <p className="text-lg font-black text-zinc-800 mt-1">{groupedEnrollments.length}</p>
           </div>
         </div>
 
-        {enrollments.length > 0 && (
+        {groupedEnrollments.length > 0 && (
           <div className="mt-4">
             <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Enrolled Courses</h3>
             <div className="flex flex-wrap gap-2">
-              {enrollments.map((e) => (
+              {groupedEnrollments.map((g) => (
                 <span
-                  key={e.id}
+                  key={g.courseName}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-600 text-xs font-bold"
                 >
                   <BookOpen className="w-3 h-3" />
-                  {e.courseName}
+                  {g.courseName}
                 </span>
               ))}
             </div>
@@ -236,6 +259,10 @@ export default function PaidUserProfilePage() {
           Payment History
         </h3>
 
+        {enrollError && (
+          <div className="mb-3 p-3 rounded-xl bg-red-50 border border-red-200 text-red-500 text-xs">{enrollError}</div>
+        )}
+
         {loading ? (
           <p className="text-xs text-zinc-400">Loading...</p>
         ) : enrollments.length === 0 ? (
@@ -244,38 +271,85 @@ export default function PaidUserProfilePage() {
             <p className="text-sm font-semibold text-zinc-400">No payments yet</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {enrollments.map((enrollment) => (
-              <div
-                key={enrollment.id}
-                className="p-4 rounded-xl bg-white/40 border border-[var(--border-light)]"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-indigo-500" />
-                    <span className="text-sm font-bold text-zinc-700">{enrollment.courseName}</span>
+          <div className="space-y-4">
+            {groupedEnrollments.map((group) => {
+              const first = group.enrollments[0];
+              const isEmi = first.paymentType === "emi";
+              const groupTotalFee = first.totalFee || 0;
+              const groupTotalPaid = group.enrollments.reduce((s, e) => s + e.amount, 0);
+              const balance = groupTotalFee - groupTotalPaid;
+
+              return (
+                <div key={group.courseName} className="p-4 rounded-xl bg-white/40 border border-[var(--border-light)]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-indigo-500" />
+                      <span className="text-sm font-bold text-zinc-700">{group.courseName}</span>
+                    </div>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      isEmi
+                        ? "bg-amber-50 border border-amber-200 text-amber-600"
+                        : "bg-emerald-50 border border-emerald-200 text-emerald-600"
+                    }`}>
+                      {isEmi ? <IndianRupee className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}
+                      {isEmi ? "EMI" : "FULL PAID"}
+                    </span>
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 text-[10px] font-bold">
-                    <CheckCircle className="w-3 h-3" />
-                    Paid
-                  </span>
+
+                  <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div className="p-2.5 rounded-lg bg-white/60 border border-[var(--border-light)]">
+                      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Total Cost</p>
+                      <p className="text-sm font-black text-zinc-800 mt-0.5">₹{groupTotalFee.toLocaleString("en-IN")}</p>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-white/60 border border-[var(--border-light)]">
+                      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Total Paid</p>
+                      <p className="text-sm font-black text-emerald-600 mt-0.5">₹{groupTotalPaid.toLocaleString("en-IN")}</p>
+                    </div>
+                    {isEmi && (
+                      <div className="p-2.5 rounded-lg bg-white/60 border border-[var(--border-light)]">
+                        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Balance</p>
+                        <p className="text-sm font-black text-amber-600 mt-0.5">₹{Math.max(0, balance).toLocaleString("en-IN")}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {isEmi && (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                        Installments ({group.enrollments.length})
+                      </p>
+                      {group.enrollments.map((enrollment, i) => (
+                        <div key={enrollment.id} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/40 border border-[var(--border-light)]">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-zinc-400 w-12">{i + 1}{i === 0 ? "st" : i === 1 ? "nd" : i === 2 ? "rd" : "th"} EMI</span>
+                            <span className="text-xs font-bold text-zinc-700">₹{enrollment.amount.toLocaleString("en-IN")}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-zinc-400">
+                              {enrollment.createdAt?.toDate
+                                ? enrollment.createdAt.toDate().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                                : "—"}
+                            </span>
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {!isEmi && (
+                    <div className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/40 border border-[var(--border-light)]">
+                      <span className="text-xs font-bold text-zinc-700">Paid on</span>
+                      <span className="text-xs text-zinc-400">
+                        {first.createdAt?.toDate
+                          ? first.createdAt.toDate().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                          : "—"}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-400">
-                    {enrollment.createdAt?.toDate
-                      ? enrollment.createdAt.toDate().toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "—"}
-                  </span>
-                  <span className="font-bold text-zinc-800">
-                    ₹{enrollment.amount.toLocaleString("en-IN")}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             <div className="flex items-center justify-between p-4 rounded-xl bg-indigo-50 border border-indigo-200">
               <span className="text-sm font-bold text-indigo-700">Total Amount Paid</span>
@@ -283,6 +357,14 @@ export default function PaidUserProfilePage() {
                 ₹{totalPaid.toLocaleString("en-IN")}
               </span>
             </div>
+            {courseFee > 0 && (
+              <div className="flex items-center justify-between p-4 rounded-xl bg-amber-50 border border-amber-200">
+                <span className="text-sm font-bold text-amber-700">Course Fee</span>
+                <span className="text-lg font-black text-amber-700">
+                  ₹{courseFee.toLocaleString("en-IN")}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>

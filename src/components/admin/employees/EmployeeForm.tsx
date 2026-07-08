@@ -6,8 +6,7 @@ import { createEmployee, updateEmployee, type EmployeeData } from "@/lib/employe
 import { useAuth } from "@/context/AuthContext";
 import DepartmentSelector from "./DepartmentSelector";
 import DesignationSelector from "./DesignationSelector";
-import { sendOtp, verifyOtp } from "@/lib/otpService";
-import { CheckCircle, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 interface EmployeeFormProps {
   mode: "add" | "edit";
@@ -32,52 +31,11 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
   const [shiftDurationHours, setShiftDurationHours] = useState(initialData?.shiftDurationHours?.toString() || "8");
   const [showPassword, setShowPassword] = useState(false);
 
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [otpError, setOtpError] = useState("");
-
   const [newPassword, setNewPassword] = useState("");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState("");
 
   const inputClass = "w-full min-h-[44px] px-4 rounded-xl bg-white/[0.04] border border-white/10 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500/40 transition-colors";
-
-  async function handleSendOtp() {
-    if (!email.trim()) { setError("Email is required to send OTP"); return; }
-    setError("");
-    setOtpError("");
-    setOtpVerified(false);
-    setOtp("");
-    setOtpLoading(true);
-    try {
-      await sendOtp(email.trim());
-      setOtpSent(true);
-    } catch (err: any) {
-      setOtpError(err?.message || "Failed to send OTP");
-    } finally {
-      setOtpLoading(false);
-    }
-  }
-
-  async function handleVerifyOtp() {
-    if (!otp.trim()) { setOtpError("Enter the OTP code"); return; }
-    setOtpError("");
-    setOtpLoading(true);
-    try {
-      const valid = await verifyOtp(email.trim(), otp.trim());
-      if (valid) {
-        setOtpVerified(true);
-      } else {
-        setOtpError("Invalid or expired OTP");
-      }
-    } catch (err: any) {
-      setOtpError(err?.message || "Verification failed");
-    } finally {
-      setOtpLoading(false);
-    }
-  }
 
   async function handleResetPassword() {
     if (!initialData || newPassword.length < 6) return;
@@ -109,8 +67,6 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
     if (!designation) { setError("Designation is required"); return; }
     if (mode === "add" && !password) { setError("Password is required"); return; }
     if (mode === "add" && password.length < 6) { setError("Password must be at least 6 characters"); return; }
-    if (mode === "add" && !otpVerified) { setError("Please verify the email with OTP first"); return; }
-
     if (!currentUser) { setError("You must be logged in"); return; }
 
     try {
@@ -157,58 +113,14 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
         </div>
         <div className="sm:col-span-2 space-y-1.5">
           <label className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Email</label>
-          <div className="flex gap-2">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (mode === "add") { setOtpSent(false); setOtpVerified(false); setOtp(""); }
-              }}
-              className={inputClass + " flex-1"}
-              placeholder="john@company.com"
-              disabled={mode === "edit"}
-            />
-            {mode === "add" && !otpVerified && (
-              <button
-                type="button"
-                onClick={handleSendOtp}
-                disabled={otpLoading || !email.trim() || otpSent}
-                className="min-h-[44px] px-4 rounded-xl bg-white border border-red-300 text-red-500 text-sm font-semibold hover:bg-red-50 transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-2"
-              >
-                {otpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {otpLoading ? "Sending..." : otpSent ? "OTP Sent" : "Send OTP"}
-              </button>
-            )}
-            {mode === "add" && otpVerified && (
-              <div className="flex items-center gap-1.5 shrink-0 min-h-[44px] px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs text-emerald-300 font-semibold">Verified</span>
-              </div>
-            )}
-          </div>
-          {mode === "add" && otpSent && !otpVerified && (
-            <div className="flex gap-2 pt-2">
-              <input
-                type="text"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className={inputClass + " w-[160px] text-center tracking-[8px] font-mono text-lg"}
-                placeholder="000000"
-                maxLength={6}
-              />
-              <button
-                type="button"
-                onClick={handleVerifyOtp}
-                disabled={otpLoading || otp.length !== 6}
-                className="min-h-[44px] px-5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-sm font-semibold hover:bg-emerald-500/30 transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-2"
-              >
-                {otpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {otpLoading ? "Verifying..." : "Verify"}
-              </button>
-              {otpError && <p className="text-xs text-red-400 self-center">{otpError}</p>}
-            </div>
-          )}
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputClass}
+            placeholder="john@company.com"
+            disabled={mode === "edit"}
+          />
         </div>
         <div className="space-y-1.5">
           <label className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Phone</label>

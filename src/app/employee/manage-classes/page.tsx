@@ -68,13 +68,14 @@ function ClassManagerView({ student, onBack }: { student: StudentCard; onBack: (
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
-    if (!title.trim()) return;
+    if (!title.trim()) { setFormError("Class title is required"); return; }
     try {
       const order = classes.length > 0 ? Math.max(...classes.map((c) => c.order ?? 0)) + 1 : 1;
       const validQuestions = formQuestions.filter((q) => q.trim());
+      const classType = student.classType || "recorded";
       const classData: any = {
         userId: student.userId,
-        type: student.classType as "live" | "recorded" || "recorded",
+        type: classType as "live" | "recorded",
         title: title.trim(),
         link: link.trim(),
         videoName: videoName || undefined,
@@ -92,8 +93,9 @@ function ClassManagerView({ student, onBack }: { student: StudentCard; onBack: (
         classData.fileName = fileName || undefined;
       }
       
-      const id = await addClass(classData);
-      setClasses((prev) => [{ id, ...classData }, ...prev]);
+      await addClass(classData);
+      const fresh = await getClassesByUserId(student.userId);
+      setClasses(fresh);
       
       setTitle("");
       setLink("");
@@ -119,7 +121,8 @@ function ClassManagerView({ student, onBack }: { student: StudentCard; onBack: (
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
-    if (!editId || !title.trim()) return;
+    if (!editId) return;
+    if (!title.trim()) { setFormError("Class title is required"); return; }
     try {
       const validQuestions = formQuestions.filter((q) => q.trim());
       const updateData: any = { title: title.trim(), link: link.trim(), videoName: videoName || undefined };
@@ -143,7 +146,8 @@ function ClassManagerView({ student, onBack }: { student: StudentCard; onBack: (
       }
       
       await updateClass(editId, updateData);
-      setClasses((prev) => prev.map((c) => c.id === editId ? { ...c, ...updateData } : c));
+      const fresh = await getClassesByUserId(student.userId);
+      setClasses(fresh);
       
       setEditId(null);
       setTitle("");
@@ -171,7 +175,8 @@ function ClassManagerView({ student, onBack }: { student: StudentCard; onBack: (
     if (!window.confirm("Delete this class entry?")) return;
     try {
       await deleteClass(id);
-      setClasses((prev) => prev.filter((c) => c.id !== id));
+      const fresh = await getClassesByUserId(student.userId);
+      setClasses(fresh);
     } catch (e: any) {
         alert(e?.message || "Failed to delete.");
     }

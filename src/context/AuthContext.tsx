@@ -1,5 +1,7 @@
 "use client";
 
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import {
   createContext,
   useContext,
@@ -7,7 +9,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import type { User } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
 import type { EmployeeData } from "@/lib/employees";
 
 interface AuthContextValue {
@@ -25,10 +27,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshUserData = async () => {
-    const [{ auth, db }, { doc, getDoc }] = await Promise.all([
-      import("@/lib/firebase"),
-      import("firebase/firestore"),
-    ]);
     const user = auth.currentUser;
     if (user) {
       try {
@@ -46,43 +44,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    let cleanup: (() => void) | null = null;
 
-    const timer = setTimeout(async () => {
-      const [{ onAuthStateChanged }, { doc, getDoc }, { auth, db }] =
-        await Promise.all([
-          import("firebase/auth"),
-          import("firebase/firestore"),
-          import("@/lib/firebase"),
-        ]);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (cancelled) return;
-
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (cancelled) return;
-        setCurrentUser(user);
-        if (user) {
-          try {
-            const snap = await getDoc(doc(db, "users", user.uid));
-            if (snap.exists()) {
-              setUserData({ uid: snap.id, ...snap.data() } as EmployeeData);
-            } else {
-              setUserData(null);
-            }
-          } catch {
+      setCurrentUser(user);
+      if (user) {
+        try {
+          const snap = await getDoc(doc(db, "users", user.uid));
+          if (snap.exists()) {
+            setUserData({ uid: snap.id, ...snap.data() } as EmployeeData);
+          } else {
             setUserData(null);
           }
-        } else {
+        } catch {
           setUserData(null);
         }
-        setLoading(false);
-      });
-      cleanup = () => unsubscribe();
-    }, 2000);
+      } else {
+        setUserData(null);
+      }
+      setLoading(false);
+    });
 
     return () => {
       cancelled = true;
-      clearTimeout(timer);
-      cleanup?.();
+      unsubscribe();
     };
   }, []);
 

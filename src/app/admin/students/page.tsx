@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { collection, query, where, getDocs, deleteDoc, doc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { GraduationCap, Mail, IndianRupee, Search, Plus, X, Phone, CheckCircle, Loader2, User as UserIcon, Lock, Trash2, BookOpen, Video, Monitor, Upload, Image, Save } from "lucide-react";
-import { sendOtp, verifyOtp } from "@/lib/otpService";
-import { createPaidUser, checkEmailExists } from "@/lib/admin/paidUserService";
+import { createPaidUser } from "@/lib/admin/paidUserService";
 import { createEnrollment } from "@/lib/enrollments";
 import { createBulkClasses, uploadClassVideo, generateVideoThumbnail, uploadClassThumbnail, uploadClassFile, isStorageUrl } from "@/lib/classes";
 import { useAuth } from "@/context/AuthContext";
@@ -40,16 +39,12 @@ export default function AdminStudents() {
   const [paymentType, setPaymentType] = useState<"full" | "emi">("full");
   const [courseName, setCourseName] = useState("");
   const [batchName, setBatchName] = useState("");
-  const [amount, setAmount] = useState("");
+  const [totalCost, setTotalCost] = useState("");
+  const [emis, setEmis] = useState<string[]>([""]);
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState<{ email: string; password: string } | null>(null);
 
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [otpError, setOtpError] = useState("");
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [selectedClassType, setSelectedClassType] = useState<"all" | "live" | "recorded">("all");
   const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
@@ -164,9 +159,18 @@ export default function AdminStudents() {
     if (!confirm) return;
 
     try {
-      await deleteDoc(doc(db, "users", uid));
+      // 1. Delete enrollment documents
+      const enrollmentSnap = await getDocs(
+        query(collection(db, "enrollments"), where("userId", "==", uid))
+      );
+      await Promise.all(enrollmentSnap.docs.map((d) => deleteDoc(doc(db, "enrollments", d.id))));
 
+      // 2. Delete Auth user via cloud function — throws on failure, stopping the process
       if (currentUser) {
+        const idToken = await currentUser.getIdToken();
+        const { deleteUser } = await import("@/lib/adminFunctions");
+        await deleteUser(uid, idToken);
+
         const logRef = doc(collection(db, "activity_log"));
         await setDoc(logRef, {
           uid: currentUser.uid,
@@ -174,14 +178,12 @@ export default function AdminStudents() {
           description: `Deleted paid user: ${uid}`,
           timestamp: Timestamp.now(),
         }).catch(() => {});
-
-        try {
-          const idToken = await currentUser.getIdToken();
-          const { deleteUser } = await import("@/lib/adminFunctions");
-          await deleteUser(uid, idToken);
-        } catch {}
       }
 
+      // 3. Delete Firestore user doc
+      await deleteDoc(doc(db, "users", uid));
+
+      // 4. Update UI
       setStudents((prev) => prev.filter((s) => s.userId !== uid));
     } catch (err: any) {
       alert(`Error: ${err.message}`);
@@ -209,48 +211,6 @@ export default function AdminStudents() {
         s.userEmail.toLowerCase().includes(search.toLowerCase())
     );
 
-  // ... form handlers (same as before)
-  async function handleSendOtp() {
-    if (!email.trim()) { setFormError("Email is required to send OTP"); return; }
-    setFormError("");
-    setOtpError("");
-    setOtpVerified(false);
-    setOtp("");
-    setOtpLoading(true);
-    try {
-      const exists = await checkEmailExists(email.trim());
-      if (exists) {
-        setFormError("This email is already registered. Please use a different email.");
-        setOtpLoading(false);
-        return;
-      }
-      await sendOtp(email.trim());
-      setOtpSent(true);
-    } catch (err: any) {
-      setOtpError(err?.message || "Failed to send OTP");
-    } finally {
-      setOtpLoading(false);
-    }
-  }
-
-  async function handleVerifyOtp() {
-    if (!otp.trim()) { setOtpError("Enter the OTP code"); return; }
-    setOtpError("");
-    setOtpLoading(true);
-    try {
-      const valid = await verifyOtp(email.trim(), otp.trim());
-      if (valid) {
-        setOtpVerified(true);
-      } else {
-        setOtpError("Invalid or expired OTP");
-      }
-    } catch (err: any) {
-      setOtpError(err?.message || "Verification failed");
-    } finally {
-      setOtpLoading(false);
-    }
-  }
-
   async function handleCreateAccount(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
@@ -262,26 +222,52 @@ export default function AdminStudents() {
     if (!password) { setFormError("Password is required"); return; }
     if (password.length < 6) { setFormError("Password must be at least 6 characters"); return; }
     if (!courseName.trim()) { setFormError("Course name is required"); return; }
-    if (!otpVerified) { setFormError("Please verify the email with OTP first"); return; }
+    if (!totalCost || Number(totalCost) <= 0) { setFormError("Total cost is required"); return; }
+    if (paymentType === "emi") {
+      const validEmis = emis.filter((e) => e.trim() && Number(e) > 0);
+      if (validEmis.length === 0) { setFormError("At least one EMI installment is required"); return; }
+    }
 
     const selectedCourse = COURSES.find((c) => c.name === courseName.trim());
     setCreating(true);
     try {
       const result = await createPaidUser(fullName.trim(), email.trim(), phone.trim(), password, classType, batchName.trim() || undefined);
       if (result.success) {
-        // Create enrollment document
-        try {
-          await createEnrollment({
-            userId: result.uid,
-            userName: fullName.trim(),
-            userEmail: result.email,
-            courseId: selectedCourse?.id || courseName.trim().toLowerCase().replace(/\s+/g, "-"),
-            courseName: courseName.trim(),
-            amount: amount ? Number(amount) : 0,
-            paymentType,
-          } as any);
-        } catch (e: any) {
-          console.warn("Enrollment creation failed (account created):", e?.message);
+        const totalFeeNum = Number(totalCost);
+
+        if (paymentType === "full") {
+          try {
+            await createEnrollment({
+              userId: result.uid,
+              userName: fullName.trim(),
+              userEmail: result.email,
+              courseId: selectedCourse?.id || courseName.trim().toLowerCase().replace(/\s+/g, "-"),
+              courseName: courseName.trim(),
+              amount: totalFeeNum,
+              totalFee: totalFeeNum,
+              paymentType: "full",
+            } as any);
+          } catch (e: any) {
+            console.warn("Enrollment creation failed (account created):", e?.message);
+          }
+        } else {
+          const validEmis = emis.filter((e) => e.trim() && Number(e) > 0);
+          for (const emiAmount of validEmis) {
+            try {
+              await createEnrollment({
+                userId: result.uid,
+                userName: fullName.trim(),
+                userEmail: result.email,
+                courseId: selectedCourse?.id || courseName.trim().toLowerCase().replace(/\s+/g, "-"),
+                courseName: courseName.trim(),
+                amount: Number(emiAmount),
+                totalFee: totalFeeNum,
+                paymentType: "emi",
+              } as any);
+            } catch (e: any) {
+              console.warn("EMI enrollment creation failed (account created):", e?.message);
+            }
+          }
         }
 
         try {
@@ -295,6 +281,10 @@ export default function AdminStudents() {
           // non-critical, user doc fields are best-effort
         }
 
+        const totalPaidForCard = paymentType === "full"
+          ? totalFeeNum
+          : emis.filter((e) => e.trim() && Number(e) > 0).reduce((sum, e) => sum + Number(e), 0);
+
         setFormSuccess({ email: result.email, password: result.password });
         setFullName("");
         setEmail("");
@@ -302,12 +292,10 @@ export default function AdminStudents() {
         setPassword("");
         setCourseName("");
         setBatchName("");
-        setAmount("");
+        setTotalCost("");
+        setEmis([""]);
         setClassType("live");
         setPaymentType("full");
-        setOtpSent(false);
-        setOtpVerified(false);
-        setOtp("");
         // Reload students list
         const userSnap = await getDocs(
           query(collection(db, "users"), where("role", "==", "paid-user"))
@@ -322,7 +310,7 @@ export default function AdminStudents() {
               userName: data.fullName || data.name || "",
               userEmail: data.email || "",
               courses: [courseName.trim()],
-              totalPaid: Number(amount),
+              totalPaid: totalPaidForCard,
               paymentType,
               batchName: batchName.trim() || undefined,
             },
@@ -345,15 +333,12 @@ export default function AdminStudents() {
     setPhone("");
     setPassword("");
     setCourseName("");
-    setAmount("");
+    setTotalCost("");
+    setEmis([""]);
     setClassType("live");
     setPaymentType("full");
     setFormError("");
     setFormSuccess(null);
-    setOtpSent(false);
-    setOtpVerified(false);
-    setOtp("");
-    setOtpError("");
   }
 
   const inputClass = "w-full min-h-[44px] px-4 rounded-xl bg-white/[0.04] border border-white/10 text-sm text-zinc-700 placeholder-zinc-400 focus:outline-none focus:border-indigo-500/40 transition-colors";
@@ -523,61 +508,75 @@ export default function AdminStudents() {
                 </div>
               </div>
 
+              {(paymentType === "full" || paymentType === "emi") && (
+                <div className="space-y-1.5">
+                  <label className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Total Cost</label>
+                  <div className="relative">
+                    <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                    <input
+                      type="number"
+                      value={totalCost}
+                      onChange={(e) => setTotalCost(e.target.value.replace(/\D/g, ""))}
+                      className={inputClass + " pl-10"}
+                      placeholder="e.g. 29999"
+                      min="0"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {paymentType === "emi" && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">EMI Installments</label>
+                    <button
+                      type="button"
+                      onClick={() => setEmis((prev) => [...prev, ""])}
+                      className="min-h-[28px] px-2.5 rounded-lg bg-violet-600 text-white text-[10px] font-bold hover:bg-violet-700 transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" /> Add EMI
+                    </button>
+                  </div>
+                  {emis.map((emi, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-zinc-400 shrink-0 w-16">{i + 1}{i === 0 ? "st" : i === 1 ? "nd" : i === 2 ? "rd" : "th"} EMI</span>
+                      <div className="relative flex-1">
+                        <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+                        <input
+                          type="number"
+                          value={emi}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "");
+                            setEmis((prev) => prev.map((v, idx) => (idx === i ? val : v)));
+                          }}
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-sm text-zinc-700 placeholder-zinc-400 focus:outline-none focus:border-indigo-500/40 transition-colors"
+                          placeholder="Amount"
+                          min="0"
+                        />
+                      </div>
+                      {emis.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setEmis((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="p-1.5 rounded-lg bg-white border border-red-200 text-red-500 hover:bg-rose-50 hover:text-red-700 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <label className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Email (Gmail ID)</label>
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setOtpSent(false);
-                      setOtpVerified(false);
-                      setOtp("");
-                    }}
-                    className={inputClass + " flex-1"}
-                    placeholder="student@gmail.com"
-                  />
-                  {!otpVerified && (
-                    <button
-                      type="button"
-                      onClick={handleSendOtp}
-                      disabled={otpLoading || !email.trim() || otpSent}
-                      className="min-h-[44px] px-4 rounded-xl bg-white border border-red-300 text-red-500 text-sm font-semibold hover:bg-red-50 transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-2"
-                    >
-                      {otpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                      {otpLoading ? "Sending..." : otpSent ? "OTP Sent" : "Send OTP"}
-                    </button>
-                  )}
-                  {otpVerified && (
-                    <div className="flex items-center gap-1.5 shrink-0 min-h-[44px] px-3 rounded-xl bg-emerald-50 border border-emerald-200">
-                      <CheckCircle className="w-4 h-4 text-emerald-500" />
-                      <span className="text-xs text-emerald-600 font-semibold">Verified</span>
-                    </div>
-                  )}
-                </div>
-                {otpSent && !otpVerified && (
-                  <div className="flex gap-2 pt-1">
-                    <input
-                      type="text"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      className={inputClass + " w-[160px] text-center tracking-[8px] font-mono text-lg"}
-                      placeholder="000000"
-                      maxLength={6}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleVerifyOtp}
-                      disabled={otpLoading || otp.length !== 6}
-                      className="min-h-[44px] px-5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 text-sm font-semibold hover:bg-emerald-500/30 transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-2"
-                    >
-                      {otpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                      {otpLoading ? "Verifying..." : "Verify"}
-                    </button>
-                    {otpError && <p className="text-xs text-red-500 self-center">{otpError}</p>}
-                  </div>
-                )}
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={inputClass}
+                  placeholder="student@gmail.com"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

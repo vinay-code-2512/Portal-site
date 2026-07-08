@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signInWithCustomToken } from "firebase/auth";
+import { onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 function AuthHandler() {
@@ -29,6 +29,16 @@ function AuthHandler() {
         const { customToken } = result.data as { customToken: string };
 
         await signInWithCustomToken(auth, customToken);
+
+        await new Promise<void>((resolve) => {
+          const unsub = onAuthStateChanged(auth, (user) => {
+            if (user) {
+              unsub();
+              resolve();
+            }
+          });
+        });
+
         router.replace(redirect);
       } catch (err: any) {
         console.error("Auth exchange failed:", err);

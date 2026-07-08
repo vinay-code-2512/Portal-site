@@ -3,6 +3,7 @@ import {
   getDocs,
   addDoc,
   doc,
+  updateDoc,
   query,
   where,
   orderBy,
@@ -18,6 +19,8 @@ export interface Enrollment {
   courseId: string;
   courseName: string;
   amount: number;
+  paymentType?: string;
+  totalFee?: number;
   createdAt?: any;
 }
 
@@ -30,12 +33,24 @@ export async function createEnrollment(data: {
   courseId: string;
   courseName: string;
   amount: number;
+  paymentType?: string;
+  totalFee?: number;
 }): Promise<string> {
   const docRef = await addDoc(collection(db, COLLECTION), {
     ...data,
     createdAt: serverTimestamp(),
   });
   return docRef.id;
+}
+
+export async function updateEnrollment(
+  id: string,
+  data: { amount?: number; paymentType?: string; totalFee?: number }
+): Promise<void> {
+  await updateDoc(doc(db, COLLECTION, id), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function getAllEnrollments(): Promise<Enrollment[]> {
@@ -49,7 +64,7 @@ export async function getAllEnrollments(): Promise<Enrollment[]> {
 
 export async function getEnrollmentsByUserId(userId: string): Promise<Enrollment[]> {
   const snap = await getDocs(
-    query(collection(db, COLLECTION), where("userId", "==", userId), orderBy("createdAt", "desc"))
+    query(collection(db, COLLECTION), where("userId", "==", userId))
   );
   const list: Enrollment[] = [];
   snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Enrollment));

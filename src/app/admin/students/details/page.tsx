@@ -2,11 +2,20 @@
 
 import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Mail, BookOpen, IndianRupee, User, Phone, Shield, Tag, Calendar, Plus, X, Link, Trash2, Edit3, Save, Monitor, Video, Image, Loader2, Upload, Lock, Eye, EyeOff, ChevronDown } from "lucide-react";
+import { Mail, BookOpen, IndianRupee, User, Phone, Shield, Tag, Calendar, Plus, X, Link, Trash2, Edit3, Save, Monitor, Video, Image, Loader2, Upload, Lock, Eye, EyeOff, ChevronDown, DollarSign } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getClassesByUserId, addClass, updateClass, deleteClass, uploadClassVideo, generateVideoThumbnail, uploadClassThumbnail, uploadClassFile, isStorageUrl, type ClassEntry } from "@/lib/classes";
+import { updateEnrollment, createEnrollment } from "@/lib/enrollments";
+
+interface EnrollmentDoc {
+  id: string;
+  courseName: string;
+  amount: number;
+  paymentType?: string;
+  totalFee?: number;
+}
 
 interface StudentData {
   userId: string;
@@ -19,9 +28,10 @@ interface StudentData {
   createdAt: string;
   courses: string[];
   totalPaid: number;
+  enrollments: EnrollmentDoc[];
 }
 
-function ProfileTab({ student }: { student: StudentData }) {
+function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: () => void }) {
   const { currentUser } = useAuth();
   const initial = student.userName.charAt(0).toUpperCase();
   const [showPwForm, setShowPwForm] = useState(false);
@@ -30,6 +40,53 @@ function ProfileTab({ student }: { student: StudentData }) {
   const [showPw, setShowPw] = useState(false);
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const [editEnrollId, setEditEnrollId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editPaymentType, setEditPaymentType] = useState<"full" | "emi">("full");
+  const [editTotalFee, setEditTotalFee] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  const [addForCourse, setAddForCourse] = useState<string | null>(null);
+  const [addAmount, setAddAmount] = useState("");
+  const [addPaymentType, setAddPaymentType] = useState<"full" | "emi">("full");
+  const [addTotalFee, setAddTotalFee] = useState("");
+  const [addSaving, setAddSaving] = useState(false);
+  const [addError, setAddError] = useState("");
+
+  async function handleEditEnrollment(enrollId: string) {
+    const enroll = student.enrollments.find((e) => e.id === enrollId);
+    if (!enroll) return;
+    setEditEnrollId(enrollId);
+    setEditAmount(String(enroll.amount));
+    setEditPaymentType((enroll.paymentType || student.paymentType || "full") as "full" | "emi");
+    setEditTotalFee(enroll.totalFee ? String(enroll.totalFee) : "");
+    setEditError("");
+  }
+
+  async function handleSaveEnrollment() {
+    if (!editEnrollId) return;
+    const amount = Number(editAmount);
+    if (isNaN(amount) || amount < 0) { setEditError("Enter a valid amount"); return; }
+
+    setEditSaving(true);
+    setEditError("");
+    try {
+      const totalFeeNum = editTotalFee ? Number(editTotalFee) : undefined;
+      await updateEnrollment(editEnrollId, { amount, paymentType: editPaymentType, totalFee: totalFeeNum });
+      await updateDoc(doc(db, "users", student.userId), {
+        paymentType: editPaymentType,
+        updatedAt: Timestamp.now(),
+      });
+      setEditEnrollId(null);
+      onRefresh();
+    } catch (e: any) {
+      setEditError(e?.message || "Failed to update");
+    } finally {
+      setEditSaving(false);
+    }
+  }
 
   async function handleResetPassword() {
     setPwMsg(null);
@@ -116,30 +173,190 @@ function ProfileTab({ student }: { student: StudentData }) {
 
         <div className="mt-4">
           <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-            <BookOpen className="w-3 h-3" /> Enrolled Courses ({student.courses.length})
+            <BookOpen className="w-3 h-3" /> Enrolled Courses ({student.enrollments.length})
           </h3>
-          <div className="flex flex-wrap gap-2">
-            {student.courses.length === 0 ? (
+          <div className="space-y-2">
+            {student.enrollments.length === 0 ? (
               <span className="text-xs text-zinc-400">No courses enrolled</span>
             ) : (
-              student.courses.map((course) => (
-                <span
-                  key={course}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-600 text-xs font-bold"
-                >
-                  <BookOpen className="w-3 h-3" />
-                  {course}
-                </span>
+              student.enrollments.map((enroll) => (
+                <div key={enroll.id} className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-600 text-xs font-bold">
+                      <BookOpen className="w-3 h-3" />
+                      {enroll.courseName}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-bold">
+                      <IndianRupee className="w-3 h-3" />
+                      {enroll.amount.toLocaleString("en-IN")}
+                      {enroll.totalFee ? (
+                        <span className="text-emerald-400"> / {enroll.totalFee.toLocaleString("en-IN")}</span>
+                      ) : null}
+                    </span>
+                    <button
+                      onClick={() => handleEditEnrollment(enroll.id)}
+                      className="p-1.5 rounded-lg hover:bg-indigo-50 text-zinc-400 hover:text-indigo-600 transition-colors"
+                      title="Edit payment"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAddForCourse(addForCourse === enroll.courseName ? null : enroll.courseName);
+                        setAddAmount("");
+                        setAddPaymentType("emi");
+                        setAddTotalFee(enroll.totalFee ? String(enroll.totalFee) : "");
+                        setAddError("");
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-emerald-50 text-zinc-400 hover:text-emerald-600 transition-colors"
+                      title="Add payment"
+                    >
+                      <DollarSign className="w-3.5 h-3.5" />
+                    </button>
+                    {editEnrollId === enroll.id && (
+                      <div className="w-full mt-1 p-3 rounded-xl bg-white/60 border border-[var(--border-light)] space-y-2">
+                        {editError && (
+                          <p className="text-xs text-red-500">{editError}</p>
+                        )}
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Amount Paid</label>
+                            <input
+                              type="number"
+                              value={editAmount}
+                              onChange={(e) => setEditAmount(e.target.value)}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-indigo-300"
+                              min="0"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Payment</label>
+                            <select
+                              value={editPaymentType}
+                              onChange={(e) => setEditPaymentType(e.target.value as "full" | "emi")}
+                              className="px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-indigo-300 appearance-none cursor-pointer bg-white"
+                            >
+                              <option value="full">FULL PAID</option>
+                              <option value="emi">EMI</option>
+                            </select>
+                          </div>
+                          <div className="w-24">
+                            <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Total Fee</label>
+                            <input
+                              type="number"
+                              value={editTotalFee}
+                              onChange={(e) => setEditTotalFee(e.target.value)}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-indigo-300"
+                              min="0"
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleSaveEnrollment}
+                            disabled={editSaving}
+                            className="min-h-[30px] px-3 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                          >
+                            {editSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                            Save
+                          </button>
+                          <button
+                            onClick={() => { setEditEnrollId(null); setEditError(""); }}
+                            className="min-h-[30px] px-3 rounded-lg bg-zinc-100 text-zinc-600 text-xs font-bold hover:bg-zinc-200 transition-all cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {addForCourse === enroll.courseName && (
+                    <div className="ml-9 p-3 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2">
+                      {addError && (
+                        <p className="text-xs text-red-500">{addError}</p>
+                      )}
+                      <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Add Payment for {enroll.courseName}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Amount Paid</label>
+                          <input
+                            type="number"
+                            value={addAmount}
+                            onChange={(e) => setAddAmount(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-emerald-300"
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Payment</label>
+                          <select
+                            value={addPaymentType}
+                            onChange={(e) => setAddPaymentType(e.target.value as "full" | "emi")}
+                            className="px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-emerald-300 appearance-none cursor-pointer bg-white"
+                          >
+                            <option value="full">FULL PAID</option>
+                            <option value="emi">EMI</option>
+                          </select>
+                        </div>
+                        <div className="w-24">
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Total Fee</label>
+                          <input
+                            type="number"
+                            value={addTotalFee}
+                            onChange={(e) => setAddTotalFee(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-emerald-300"
+                            min="0"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            const amountNum = Number(addAmount);
+                            if (isNaN(amountNum) || amountNum <= 0) { setAddError("Enter a valid amount"); return; }
+                            setAddSaving(true);
+                            setAddError("");
+                            try {
+                              const totalFeeNum = addTotalFee ? Number(addTotalFee) : undefined;
+                              const courseId = enroll.courseName.toLowerCase().replace(/\s+/g, "-");
+                              await createEnrollment({
+                                userId: student.userId,
+                                userName: student.userName,
+                                userEmail: student.userEmail,
+                                courseId,
+                                courseName: enroll.courseName,
+                                amount: amountNum,
+                                paymentType: addPaymentType,
+                                totalFee: totalFeeNum,
+                              });
+                              setAddForCourse(null);
+                              setAddAmount("");
+                              onRefresh();
+                            } catch (e: any) {
+                              setAddError(e?.message || "Failed to add payment");
+                            } finally {
+                              setAddSaving(false);
+                            }
+                          }}
+                          disabled={addSaving}
+                          className="min-h-[30px] px-3 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {addSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                          Add
+                        </button>
+                        <button
+                          onClick={() => { setAddForCourse(null); setAddError(""); }}
+                          className="min-h-[30px] px-3 rounded-lg bg-white text-emerald-600 border border-emerald-200 text-xs font-bold hover:bg-emerald-50 transition-all cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))
-            )}
-            {student.paymentType && (
-              <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold ${
-                student.paymentType === "full"
-                  ? "bg-emerald-50 border border-emerald-200 text-emerald-600"
-                  : "bg-amber-50 border border-amber-200 text-amber-600"
-              }`}>
-                {student.paymentType === "full" ? "FULL PAID" : "EMI"}
-              </span>
             )}
           </div>
         </div>
@@ -252,13 +469,14 @@ function ClassTab({ student }: { student: StudentData }) {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
-    if (!title.trim()) return;
+    if (!title.trim()) { setFormError("Class title is required"); return; }
     try {
       const order = classes.length > 0 ? Math.max(...classes.map((c) => c.order ?? 0)) + 1 : 1;
       const validQuestions = formQuestions.filter((q) => q.trim());
+      const classType = student.classType || "live";
       const classData: any = {
         userId: student.userId,
-        type: student.classType as "live" | "recorded",
+        type: classType as "live" | "recorded",
         title: title.trim(),
         link: link.trim(),
         videoName: videoName || undefined,
@@ -266,7 +484,7 @@ function ClassTab({ student }: { student: StudentData }) {
       };
       if (validQuestions.length > 0) classData.questions = validQuestions;
       if (thumbnailUrl) classData.thumbnailUrl = thumbnailUrl;
-      if (isLive && formIsLiveNow) classData.isLiveNow = true;
+      if (classType === "live" && formIsLiveNow) classData.isLiveNow = true;
       if (liveVideoUrl) {
         classData.liveVideoUrl = liveVideoUrl;
         classData.liveVideoName = liveVideoName || undefined;
@@ -276,8 +494,9 @@ function ClassTab({ student }: { student: StudentData }) {
         classData.fileUrl = fileUrl;
         classData.fileName = fileName || undefined;
       }
-      const id = await addClass(classData);
-      setClasses((prev) => [{ id, ...classData }, ...prev]);
+      await addClass(classData);
+      const fresh = await getClassesByUserId(student.userId);
+      setClasses(fresh);
       setTitle("");
       setLink("");
       setFormQuestions([]);
@@ -303,7 +522,8 @@ function ClassTab({ student }: { student: StudentData }) {
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
-    if (!editId || !title.trim()) return;
+    if (!editId) return;
+    if (!title.trim()) { setFormError("Class title is required"); return; }
     try {
       const validQuestions = formQuestions.filter((q) => q.trim());
       const updateData: any = { title: title.trim(), link: link.trim(), videoName: videoName || undefined };
@@ -327,7 +547,8 @@ function ClassTab({ student }: { student: StudentData }) {
         updateData.fileName = null;
       }
       await updateClass(editId, updateData);
-      setClasses((prev) => prev.map((c) => c.id === editId ? { ...c, ...updateData } : c));
+      const fresh = await getClassesByUserId(student.userId);
+      setClasses(fresh);
       setEditId(null);
       setTitle("");
       setLink("");
@@ -354,7 +575,8 @@ function ClassTab({ student }: { student: StudentData }) {
     if (!window.confirm("Delete this class entry?")) return;
     try {
       await deleteClass(id);
-      setClasses((prev) => prev.filter((c) => c.id !== id));
+      const fresh = await getClassesByUserId(student.userId);
+      setClasses(fresh);
     } catch {}
   }
 
@@ -816,6 +1038,7 @@ function StudentDetailsInner() {
   const [student, setStudent] = useState<StudentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   function formatDate(ts: any): string {
     if (!ts) return "—";
@@ -824,61 +1047,72 @@ function StudentDetailsInner() {
     return new Date(ts).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
   }
 
-  useEffect(() => {
+  async function fetchData() {
     if (!userId) { setLoading(false); setError("No student ID provided"); return; }
     const uid: string = userId;
 
-    async function fetchData() {
-      setLoading(true);
-      setError("");
-      try {
-        const userSnap = await getDoc(doc(db, "users", uid));
-        if (!userSnap.exists()) {
-          setError("Student not found");
-          setLoading(false);
-          return;
-        }
-
-        const userData = userSnap.data();
-
-        const courses: string[] = [];
-        let totalPaid = 0;
-
-        try {
-          const enrollmentSnap = await getDocs(
-            query(collection(db, "enrollments"), where("userId", "==", uid))
-          );
-          enrollmentSnap.forEach((d) => {
-            const data = d.data();
-            if (data.courseName) courses.push(data.courseName);
-            if (data.amount) totalPaid += data.amount;
-          });
-        } catch {
-          // Enrollments read may fail due to security rules; fallback to user doc fields
-          if (userData.courseName) courses.push(userData.courseName);
-        }
-
-        setStudent({
-          userId: uid,
-          userName: userData.fullName || userData.name || "Unknown",
-          userEmail: userData.email || "",
-          phone: userData.phone || "",
-          role: userData.role || "",
-          classType: userData.classType || "",
-          paymentType: userData.paymentType || "",
-          createdAt: formatDate(userData.createdAt),
-          courses,
-          totalPaid,
-        });
-      } catch (err: any) {
-        setError(err?.message || "Failed to load student");
-      } finally {
+    setLoading(true);
+    setError("");
+    try {
+      const userSnap = await getDoc(doc(db, "users", uid));
+      if (!userSnap.exists()) {
+        setError("Student not found");
         setLoading(false);
+        return;
       }
-    }
 
+      const userData = userSnap.data();
+
+      const enrollmentDocs: EnrollmentDoc[] = [];
+      const courses: string[] = [];
+      let totalPaid = 0;
+
+      try {
+        const enrollmentSnap = await getDocs(
+          query(collection(db, "enrollments"), where("userId", "==", uid))
+        );
+        enrollmentSnap.forEach((d) => {
+          const data = d.data();
+          enrollmentDocs.push({
+            id: d.id,
+            courseName: data.courseName || "",
+            amount: data.amount || 0,
+            paymentType: data.paymentType || undefined,
+          });
+          if (data.courseName) courses.push(data.courseName);
+          if (data.amount) totalPaid += data.amount;
+        });
+      } catch {
+        if (userData.courseName) courses.push(userData.courseName);
+      }
+
+      setStudent({
+        userId: uid,
+        userName: userData.fullName || userData.name || "Unknown",
+        userEmail: userData.email || "",
+        phone: userData.phone || "",
+        role: userData.role || "",
+        classType: userData.classType || "",
+        paymentType: userData.paymentType || "",
+        createdAt: formatDate(userData.createdAt),
+        courses,
+        totalPaid,
+        enrollments: enrollmentDocs,
+      });
+    } catch (err: any) {
+      setError(err?.message || "Failed to load student");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
     fetchData();
-  }, [userId]);
+  }, [userId, refreshKey]);
+
+  function handleRefresh() {
+    setRefreshKey((k) => k + 1);
+  }
 
   if (loading) {
     return (
@@ -899,7 +1133,7 @@ function StudentDetailsInner() {
 
   return (
     <div className="space-y-6 pb-12 pt-6 sm:pt-8">
-      {tab === "profile" && <ProfileTab student={student} />}
+      {tab === "profile" && <ProfileTab student={student} onRefresh={handleRefresh} />}
       {tab === "class" && <ClassTab student={student} />}
     </div>
   );

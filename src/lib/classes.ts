@@ -71,7 +71,9 @@ export async function addClass(data: {
   fileUrl?: string;
   fileName?: string;
 }): Promise<string> {
+  const validTypes = ["live", "recorded"];
   const clean: Record<string, any> = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+  if (clean.type && !validTypes.includes(clean.type)) clean.type = "live";
   if (clean.order === undefined) {
     const existing = await getClassesByUserIdOrdered(clean.userId as string);
     clean.order = existing.length > 0 ? (existing[existing.length - 1].order ?? 0) + 1 : 1;

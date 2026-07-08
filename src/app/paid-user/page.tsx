@@ -50,6 +50,7 @@ export default function PaidUserDashboard() {
 
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [enrollmentsLoading, setEnrollmentsLoading] = useState(true);
+  const [enrollError, setEnrollError] = useState("");
 
   const [classes, setClasses] = useState<ClassEntry[]>([]);
   const [classesLoading, setClassesLoading] = useState(true);
@@ -86,6 +87,7 @@ export default function PaidUserDashboard() {
   const userCourseName = (userData as any)?.courseName || "";
   const initial = fullName.charAt(0).toUpperCase();
   const totalPaid = enrollments.reduce((sum, e) => sum + e.amount, 0);
+  const courseFee = enrollments.reduce((max, e) => e.totalFee ? Math.max(max, e.totalFee) : max, 0);
 
   const allCourseNames = [
     ...new Set([
@@ -94,12 +96,23 @@ export default function PaidUserDashboard() {
     ]),
   ];
 
-  useEffect(() => {
+  function fetchEnrollments() {
     if (!currentUser) return;
+    setEnrollError("");
     getEnrollmentsByUserId(currentUser.uid)
       .then(setEnrollments)
-      .catch(() => {})
+      .catch((err) => {
+        const msg = err?.message || "Failed to load payment info";
+        console.error("Enrollment fetch error:", msg);
+        setEnrollError(msg);
+      })
       .finally(() => setEnrollmentsLoading(false));
+  }
+
+  useEffect(() => {
+    fetchEnrollments();
+    window.addEventListener("focus", fetchEnrollments);
+    return () => window.removeEventListener("focus", fetchEnrollments);
   }, [currentUser]);
 
   useEffect(() => {
@@ -145,10 +158,15 @@ export default function PaidUserDashboard() {
             lastPlayedVideo={lastPlayedVideo}
           />
 
+        {enrollError && (
+          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-500 text-xs">{enrollError}</div>
+        )}
+
         {/* Quick Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard icon={BookOpen} label="Courses Enrolled" value={allCourseNames.length} />
           <StatCard icon={IndianRupee} label="Total Paid" value={`₹${totalPaid.toLocaleString("en-IN")}`} />
+          {courseFee > 0 && <StatCard icon={IndianRupee} label="Course Fee" value={`₹${courseFee.toLocaleString("en-IN")}`} />}
           <StatCard icon={Tag} label="Class Type" value={classType ? classType.charAt(0).toUpperCase() + classType.slice(1) : "—"} />
           <StatCard icon={Monitor} label="Classes" value={classes.length} />
         </div>

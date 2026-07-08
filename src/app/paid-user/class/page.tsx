@@ -264,6 +264,7 @@ export default function PaidUserClassPage() {
   const { checkedIn, loading: checkInLoading } = useCheckIn();
   const [classes, setClasses] = useState<ClassEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
   const [viewQuestionsId, setViewQuestionsId] = useState<string | null>(null);
   const [studentAnswers, setStudentAnswers] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -280,14 +281,23 @@ export default function PaidUserClassPage() {
   const sortClasses = (list: ClassEntry[]) =>
     list.sort((a, b) => (a.createdAt?.toMillis?.() ?? 0) - (b.createdAt?.toMillis?.() ?? 0));
 
-  useEffect(() => {
+  function fetchClasses() {
     if (!currentUser) return;
-      getClassesByUserId(currentUser.uid).then(sortClasses)
+    setFetchError("");
+    getClassesByUserId(currentUser.uid).then(sortClasses)
       .then(setClasses)
       .catch((err) => {
-        console.error("Class fetch error:", err?.message || err);
+        const msg = err?.message || "Failed to load classes";
+        console.error("Class fetch error:", msg);
+        setFetchError(msg);
       })
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    fetchClasses();
+    window.addEventListener("focus", fetchClasses);
+    return () => window.removeEventListener("focus", fetchClasses);
   }, [currentUser, isLive]);
 
   async function handleMarkComplete(classId: string) {
@@ -405,6 +415,10 @@ export default function PaidUserClassPage() {
             First you have to check in in dashboard to play videos.
           </p>
         </div>
+      )}
+
+      {fetchError && (
+        <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-500 text-xs">{fetchError}</div>
       )}
 
       {loading ? (
