@@ -166,9 +166,9 @@ export default function TopNavbar({ title, items, brand, role, onMenuClick, curr
     window.open(meeting.link, "_blank");
   };
 
-  const handleLogout = useCallback(async () => {
-    await signOut(auth);
-    window.location.href = "/login";
+  const handleLogout = useCallback(() => {
+    window.location.href = "https://www.robotgenie.in/login/";
+    signOut(auth);
   }, []);
 
   async function handlePhotoUpload(file: File) {

@@ -34,10 +34,10 @@ export default function DashboardSidebar({ open, onClose }: DashboardSidebarProp
   useScrollLock(open);
   const { currentUser } = useAuth();
 
-  const handleLogout = useCallback(async () => {
-    await signOut(auth);
+  const handleLogout = useCallback(() => {
+    window.location.href = "https://www.robotgenie.in/login/";
     onClose();
-    window.location.href = "/login";
+    signOut(auth);
   }, [onClose, router]);
 
   const isActive = (href: string) => pathname === href;
