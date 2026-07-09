@@ -6,7 +6,7 @@ import {
   serverTimestamp, Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { getLocalDateString } from "./format";
+import { getLocalDateString, isSunday } from "./format";
 
 const API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY!;
 const IDENTITY_TOOLKIT_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`;
@@ -218,7 +218,10 @@ export async function getMonthlyAttendance(uid: string, year: number, month: num
     )
   );
   const records: any[] = [];
-  snap.forEach((d) => records.push({ id: d.id, ...d.data() }));
+  snap.forEach((d) => {
+    const data = { id: d.id, ...d.data() };
+    if (!isSunday(data.date)) records.push(data);
+  });
   return records;
 }
 

@@ -51,9 +51,11 @@ export function useWeeklyStats() {
 
         const days: DailyHour[] = [];
         let total = 0;
+        const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         for (let i = 0; i < 7; i++) {
           const d = new Date(monday);
           d.setDate(monday.getDate() + i);
+          if (d.getDay() === 0) continue;
           const dateStr = getLocalDateString(d);
           const record = records.find((r: any) => r.date === dateStr);
 
@@ -76,7 +78,6 @@ export function useWeeklyStats() {
             hours = Math.max(0, (nowMs - checkIn.getTime() - breaksMs) / (1000 * 60 * 60));
           }
 
-          const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
           days.push({
             day: dayNames[d.getDay()],
             date: dateStr,

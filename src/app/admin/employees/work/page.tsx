@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { collection, query, where, orderBy, getDocs, Timestamp, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getEmployee } from "@/lib/employees";
-import { getLocalDateString, formatTime } from "@/lib/format";
+import { getLocalDateString, formatTime, isSunday } from "@/lib/format";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
 import {
@@ -21,7 +21,7 @@ interface ActivityEntry {
 }
 
 function getTargetHours(shiftDurationHours: number): number[] {
-  return Array.from({ length: shiftDurationHours || 9 }, (_, i) => 11 + i);
+  return Array.from({ length: shiftDurationHours || 8 }, (_, i) => 11 + i);
 }
 
 interface ActivityRow {
@@ -40,6 +40,7 @@ function getActivityRows(
   missedEntries: ActivityEntry[],
   targetHours: number[]
 ): ActivityRow[] {
+  if (isSunday(dateKey)) return [];
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const todayStr = getLocalDateString(now);
@@ -273,7 +274,7 @@ function DaySlotsView({ dateKey, entries, missedEntries, targetHours }: { dateKe
 }
 
 function ActivityView({
-  entries, missedEntries, loading, emptyMessage, googleSheetId, shiftDurationHours = 9,
+  entries, missedEntries, loading, emptyMessage, googleSheetId, shiftDurationHours = 8,
 }: {
   entries: ActivityEntry[];
   missedEntries: ActivityEntry[];
@@ -357,6 +358,7 @@ function getDailyCounts(entries: ActivityEntry[], missedEntries: ActivityEntry[]
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStart);
     d.setDate(weekStart.getDate() + i);
+    if (d.getDay() === 0) continue;
     const dateStr = getLocalDateString(d);
     const rows = getActivityRows(dateStr, entries, missedEntries || [], targetHours);
     const confirmed = rows.filter((r) => r.status === "confirmed").length;
@@ -545,7 +547,7 @@ function WeeklyDonutChart({ confirmed, missed }: { confirmed: number; missed: nu
   );
 }
 
-function WeeklyContent({ employeeId, googleSheetId, shiftDurationHours = 9 }: { employeeId: string; googleSheetId?: string | null; shiftDurationHours?: number }) {
+function WeeklyContent({ employeeId, googleSheetId, shiftDurationHours = 8 }: { employeeId: string; googleSheetId?: string | null; shiftDurationHours?: number }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const weekRef = useMemo(() => {
     const d = new Date();
@@ -676,7 +678,7 @@ function WeeklyContent({ employeeId, googleSheetId, shiftDurationHours = 9 }: { 
   );
 }
 
-function HistoryContent({ employeeId, googleSheetId, shiftDurationHours = 9 }: { employeeId: string; googleSheetId?: string | null; shiftDurationHours?: number }) {
+function HistoryContent({ employeeId, googleSheetId, shiftDurationHours = 8 }: { employeeId: string; googleSheetId?: string | null; shiftDurationHours?: number }) {
   const targetHours = getTargetHours(shiftDurationHours);
 
   const { entries, missedEntries, missedCount, loading } = useActivityData(
@@ -843,7 +845,7 @@ function PageContent() {
   if (loading) return <LoadingState />;
 
   const sheetId = (employee as any)?.googleWorkSheetId || (employee as any)?.googleSheetId;
-  const shiftDurationHours = (employee as any)?.shiftDurationHours || 9;
+  const shiftDurationHours = (employee as any)?.shiftDurationHours || 8;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pt-6">

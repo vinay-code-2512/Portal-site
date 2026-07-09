@@ -1,12 +1,16 @@
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, Timestamp } from "firebase/firestore";
 import { db } from "./firebase";
+import { isSunday } from "./format";
 
 const BREVO_WORKER_URL = process.env.NEXT_PUBLIC_BREVO_WORKER_URL || "https://robot-genie-brevo.wild-sun-0ca5.workers.dev";
 
 export async function trackMissedModal(
   uid: string,
-  slotHour?: number
+  slotHour?: number,
+  slotMinutes?: number
 ): Promise<{ missedCount: number; halfDayMarked: boolean }> {
+  const today = new Date().toISOString().split("T")[0];
+  if (isSunday(today)) return { missedCount: 0, halfDayMarked: false };
   const userRef = doc(db, "users", uid);
   const userSnap = await getDoc(userRef);
 
@@ -40,8 +44,9 @@ export async function trackMissedModal(
     uid,
     type: "missed_activity",
     slotHour: slotHour ?? null,
+    slotMinutes: slotMinutes ?? null,
     description: slotHour
-      ? `Missed activity confirmation prompt for ${String(slotHour).padStart(2, "0")}:00 – ${String(slotHour + 1).padStart(2, "0")}:00`
+      ? `Missed activity confirmation prompt for ${String(slotHour).padStart(2, "0")}:${slotMinutes === 30 ? "30" : "00"} – ${String(slotHour + 1).padStart(2, "0")}:00`
       : `Missed activity confirmation prompt`,
     timestamp: Timestamp.now(),
   });

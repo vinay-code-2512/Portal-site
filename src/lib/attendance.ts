@@ -6,7 +6,7 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
-import { getLocalDateString } from "./format";
+import { getLocalDateString, isSunday } from "./format";
 
 export interface BreakEntry {
   start: any;
@@ -76,6 +76,7 @@ async function countConsecutiveLateWindow(uid: string, currentDate: string): Pro
 }
 
 export async function createAttendanceRecord(uid: string, date: string, checkInTime: Date) {
+  if (isSunday(date)) throw new Error("Cannot check in on Sunday");
   const ref = doc(db, "attendance", `${uid}_${date}`);
   const checkInTimestamp = Timestamp.fromDate(checkInTime);
   const hour = checkInTime.getHours();
@@ -251,8 +252,11 @@ export async function uploadActivityAttachment(uid: string, file: File): Promise
 export async function saveActivityConfirmation(
   uid: string,
   note: string,
-  attachments: { name: string; url: string; type: "image" | "pdf" }[]
+  attachments: { name: string; url: string; type: "image" | "pdf" }[],
+  slotMinutes?: number
 ) {
+  const today = getLocalDateString(new Date());
+  if (isSunday(today)) return;
   const ref_ = doc(collection(db, "activity_log"));
   await setDoc(ref_, {
     uid,
@@ -260,11 +264,14 @@ export async function saveActivityConfirmation(
     description: note,
     attachments,
     slotHour: new Date().getHours(),
+    slotMinutes: slotMinutes ?? null,
     timestamp: Timestamp.now(),
   });
 }
 
 export async function logActivity(uid: string, type: string, description: string) {
+  const today = getLocalDateString(new Date());
+  if (isSunday(today)) return;
   const ref = doc(collection(db, "activity_log"));
   await setDoc(ref, {
     uid,

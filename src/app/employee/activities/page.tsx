@@ -4,10 +4,10 @@ import { Suspense, useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, query, where, orderBy, getDocs, Timestamp, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot, Timestamp, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { getLocalDateString, formatTime } from "@/lib/format";
+import { getLocalDateString, formatTime, isSunday } from "@/lib/format";
 import { ClipboardList, FileText, ExternalLink, X, Clock, XCircle, CheckCircle, CalendarDays, ChevronLeft, ChevronRight, BarChart3, Circle } from "lucide-react";
 import EmptyState from "@/components/shared/EmptyState";
 import LoadingState from "@/components/common/LoadingState";
@@ -25,6 +25,7 @@ interface ActivityEntry {
   attachments: ActivityAttachment[];
   timestamp: Timestamp;
   slotHour?: number | null;
+  slotMinutes?: number | null;
   entryType: "confirmed" | "missed";
 }
 
@@ -66,28 +67,32 @@ function getStartOfTomorrow(date: Date): Date {
   return start;
 }
 
-function getActivityRows(dateKey: string, entries: ActivityEntry[], shiftDurationHours: number = 9): ActivityRow[] {
+function getActivityRows(dateKey: string, entries: ActivityEntry[], shiftDurationHours: number = 8): ActivityRow[] {
+  if (isSunday(dateKey)) return [];
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const todayStr = getLocalDateString(now);
   const targetHours = getTargetHours(shiftDurationHours);
   const rows: ActivityRow[] = [];
 
-  const hasEntryForHour = (hour: number): boolean =>
-    rows.some((r) => {
-      if (!r.timestamp) return false;
-      return r.timestamp.toDate().getHours() === hour;
-    });
+  const hasHalfHourEntries = entries.some((e) => e.slotMinutes === 30);
+
+  const getSlotMinutes = (e: ActivityEntry): number => e.slotMinutes ?? 0;
+
+  const filledSlots = new Set<string>();
 
   entries.forEach((e) => {
     const d = e.timestamp?.toDate();
     if (!d) return;
     if (getLocalDateString(d) !== dateKey) return;
     if (!targetHours.includes(e.slotHour ?? d.getHours())) return;
+    const mins = getSlotMinutes(e);
+    const key = `${d.getHours()}_${mins}`;
+    filledSlots.add(key);
     rows.push({
       id: e.id,
       time: formatTime(e.timestamp),
-      sortValue: d.getHours() * 60 + d.getMinutes(),
+      sortValue: d.getHours() * 60 + mins,
       status: e.entryType,
       note: e.note,
       attachments: e.attachments || [],
@@ -95,31 +100,39 @@ function getActivityRows(dateKey: string, entries: ActivityEntry[], shiftDuratio
     });
   });
 
+  const lastHour = targetHours[targetHours.length - 1];
+
   targetHours.forEach((hour) => {
-    if (hasEntryForHour(hour)) return;
-    const minutes = hour * 60;
-    const label = `${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? "PM" : "AM"}`;
-    if (dateKey > todayStr || (dateKey === todayStr && minutes > currentMinutes)) {
-      rows.push({
-        id: `pending_${hour}`,
-        time: label,
-        sortValue: minutes,
-        status: "pending",
-        note: "",
-        attachments: [],
-        timestamp: null,
-      });
-    } else {
-      rows.push({
-        id: `missed_${hour}`,
-        time: label,
-        sortValue: minutes,
-        status: "missed",
-        note: "No activity confirmed",
-        attachments: [],
-        timestamp: null,
-      });
-    }
+    const offsets = hasHalfHourEntries && hour !== lastHour ? [0, 30] : [0];
+    offsets.forEach((offset) => {
+      const key = `${hour}_${offset}`;
+      if (filledSlots.has(key)) return;
+      const minutes = hour * 60 + offset;
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const label = `${displayHour}:${offset === 30 ? "30" : "00"} ${ampm}`;
+      if (dateKey > todayStr || (dateKey === todayStr && minutes > currentMinutes)) {
+        rows.push({
+          id: `pending_${key}`,
+          time: label,
+          sortValue: minutes,
+          status: "pending",
+          note: "",
+          attachments: [],
+          timestamp: null,
+        });
+      } else {
+        rows.push({
+          id: `missed_${key}`,
+          time: label,
+          sortValue: minutes,
+          status: "missed",
+          note: "No activity confirmed",
+          attachments: [],
+          timestamp: null,
+        });
+      }
+    });
   });
 
   rows.sort((a, b) => a.sortValue - b.sortValue);
@@ -135,6 +148,7 @@ function getDailyCounts(entries: ActivityEntry[], referenceDate: Date, shiftDura
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStart);
     d.setDate(weekStart.getDate() + i);
+    if (d.getDay() === 0) continue;
     const dateStr = getLocalDateString(d);
     const rows = getActivityRows(dateStr, entries, shiftDurationHours);
     const confirmed = rows.filter((r) => r.status === "confirmed").length;
@@ -245,66 +259,75 @@ function useActivityData(uid: string | undefined, start: Date, end: Date) {
 
   useEffect(() => {
     if (!uid) return;
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const [confirmedSnap, missedSnap] = await Promise.all([
-          getDocs(
-            query(
-              collection(db, "activity_log"),
-              where("uid", "==", uid),
-              where("type", "==", "activity_confirmation"),
-              orderBy("timestamp", "desc")
-            )
-          ),
-          getDocs(
-            query(
-              collection(db, "activity_log"),
-              where("uid", "==", uid),
-              where("type", "==", "missed_activity"),
-              orderBy("timestamp", "desc")
-            )
-          ),
-        ]);
-        const list: ActivityEntry[] = [];
-        confirmedSnap.forEach((d) => {
-          const data = d.data();
-          const ts = data.timestamp as Timestamp;
-          const td = ts?.toDate();
-          if (td && td >= start && td < end) {
-            list.push({
-              id: d.id,
-              note: data.description || data.note || "",
-              attachments: data.attachments || [],
-              timestamp: ts,
-              slotHour: data.slotHour ?? null,
-              entryType: "confirmed",
-            });
-          }
-        });
-        missedSnap.forEach((d) => {
-          const data = d.data();
-          const ts = data.timestamp as Timestamp;
-          const td = ts?.toDate();
-          if (td && td >= start && td < end) {
-            list.push({
-              id: d.id,
-              note: data.description || data.note || "",
-              attachments: data.attachments || [],
-              timestamp: ts,
-              slotHour: data.slotHour ?? null,
-              entryType: "missed",
-            });
-          }
-        });
-        setEntries(list);
-      } catch {
-        // silent
-      } finally {
-        setLoading(false);
-      }
+    setLoading(true);
+
+    const toEntry = (d: any, entryType: "confirmed" | "missed"): ActivityEntry | null => {
+      const data = d.data();
+      const ts = data.timestamp as Timestamp;
+      const td = ts?.toDate();
+      if (!td || td < start || td >= end) return null;
+      return {
+        id: d.id,
+        note: data.description || data.note || "",
+        attachments: data.attachments || [],
+        timestamp: ts,
+        slotHour: data.slotHour ?? null,
+        slotMinutes: data.slotMinutes ?? null,
+        entryType,
+      };
     };
-    fetch();
+
+    let snapshotsReceived = 0;
+    let confirmedDocs: any[] = [];
+    let missedDocs: any[] = [];
+
+    const merge = () => {
+      const list: ActivityEntry[] = [];
+      confirmedDocs.forEach((d) => { const e = toEntry(d, "confirmed"); if (e) list.push(e); });
+      missedDocs.forEach((d) => { const e = toEntry(d, "missed"); if (e) list.push(e); });
+      setEntries(list);
+    };
+
+    const onConfirmed = (snap: any) => {
+      confirmedDocs = snap.docs;
+      snapshotsReceived++;
+      merge();
+      if (snapshotsReceived >= 2) setLoading(false);
+    };
+
+    const onMissed = (snap: any) => {
+      missedDocs = snap.docs;
+      snapshotsReceived++;
+      merge();
+      if (snapshotsReceived >= 2) setLoading(false);
+    };
+
+    const onError = (err: any) => {
+      console.error("useActivityData error:", err);
+      setLoading(false);
+    };
+
+    const qConfirmed = query(
+      collection(db, "activity_log"),
+      where("uid", "==", uid),
+      where("type", "==", "activity_confirmation"),
+      orderBy("timestamp", "desc")
+    );
+
+    const qMissed = query(
+      collection(db, "activity_log"),
+      where("uid", "==", uid),
+      where("type", "==", "missed_activity"),
+      orderBy("timestamp", "desc")
+    );
+
+    const unsubConfirmed = onSnapshot(qConfirmed, onConfirmed, onError);
+    const unsubMissed = onSnapshot(qMissed, onMissed, onError);
+
+    return () => {
+      unsubConfirmed();
+      unsubMissed();
+    };
   }, [uid, startKey, endKey]);
 
   return { entries, loading };
@@ -523,7 +546,7 @@ function ActivitiesPage() {
   const [googleSheetUrl, setGoogleSheetUrl] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [fetchingSheet, setFetchingSheet] = useState(true);
-  const [shiftDurationHours, setShiftDurationHours] = useState(9);
+  const [shiftDurationHours, setShiftDurationHours] = useState(8);
 
   useEffect(() => {
     if (authLoading || !currentUser) return;

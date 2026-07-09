@@ -7,6 +7,7 @@ import {
   getCountFromServer,
   orderBy,
 } from "firebase/firestore";
+import { isSunday } from "./format";
 
 export interface DashboardOverview {
   totalEmployees: number;
@@ -93,6 +94,10 @@ export async function getDashboardOverview(
   month: number
 ): Promise<DashboardOverview> {
   const today = new Date().toISOString().slice(0, 10);
+  if (isSunday(today)) {
+    const totalEmployees = await getTotalEmployees();
+    return { totalEmployees, attendancePercent: 0, activeLeaves: 0, monthlyPayroll: 0, payrollChange: 0 };
+  }
   const firstDay = `${year}-${String(month).padStart(2, "0")}-01`;
 
   const [totalEmployees, attendanceSnap, leaveSnap, currentPayroll, prevPayroll] =
@@ -187,6 +192,7 @@ export async function getAttendanceReport(
   snap.forEach((doc) => {
     const data = doc.data();
     const date = data.date;
+    if (isSunday(date)) return;
     if (!byDate.has(date)) {
       byDate.set(date, { present: 0, absent: 0, late: 0, onLeave: 0 });
     }
@@ -396,6 +402,7 @@ export async function getEmployeeAnalytics(
 
   attendanceSnap.forEach((doc) => {
     const data = doc.data();
+    if (isSunday(data.date)) return;
     const uid = data.uid;
     if (!byUid.has(uid)) {
       byUid.set(uid, { present: 0, absent: 0, late: 0, leave: 0, total: 0 });
@@ -486,6 +493,7 @@ export async function getDepartmentAnalytics(): Promise<DepartmentAnalyticsRow[]
   const uidAttendance = new Map<string, { present: number; total: number }>();
   attendanceSnap.forEach((doc) => {
     const data = doc.data();
+    if (isSunday(data.date)) return;
     const uid = data.uid;
     if (!uidAttendance.has(uid)) {
       uidAttendance.set(uid, { present: 0, total: 0 });
@@ -561,6 +569,7 @@ export async function getDateRangeAttendancePercent(
   let total = 0;
   snap.forEach((doc) => {
     const data = doc.data();
+    if (isSunday(data.date)) return;
     total++;
     if (data.status === "present" || data.status === "late") present++;
   });

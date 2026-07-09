@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { getLocalDateString } from "@/lib/format";
+import { getLocalDateString, isSunday } from "@/lib/format";
 
 export interface AttendanceRecord {
   id: string;
@@ -81,7 +81,7 @@ export function useAttendance() {
           if (data.autoCheckedOut) data.status = "absent";
           records.push({ id: d.id, ...data } as AttendanceRecord);
         });
-        setMonthlyRecords(records);
+        setMonthlyRecords(records.filter((r) => !isSunday(r.date)));
       } catch (err: any) {
         if (!cancelled) setError(err?.message || "Failed to load attendance");
       } finally {

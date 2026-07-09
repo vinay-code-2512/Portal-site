@@ -33,3 +33,8 @@ export const getLocalDateString = (d: Date) => {
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+
+export function isSunday(dateStr: string): boolean {
+  if (!dateStr) return false;
+  return new Date(dateStr + "T00:00:00").getDay() === 0;
+}

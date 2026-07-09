@@ -41,6 +41,7 @@ interface ActivityConfirmationModalProps {
   onClose: () => void;
   timeout?: number;
   slotHour?: number;
+  slotMinutes?: number;
 }
 
 export default function ActivityConfirmationModal({
@@ -49,6 +50,7 @@ export default function ActivityConfirmationModal({
   onClose,
   timeout = 120,
   slotHour,
+  slotMinutes,
 }: ActivityConfirmationModalProps) {
   const [countdown, setCountdown] = useState(timeout);
   const [note, setNote] = useState("");
@@ -124,11 +126,11 @@ export default function ActivityConfirmationModal({
     if (!currentUser) return;
     onClose();
     try {
-      await trackMissedModal(currentUser.uid, slotHour);
+      await trackMissedModal(currentUser.uid, slotHour, slotMinutes);
     } catch (err) {
       console.error("Failed to track missed modal:", err);
     }
-  }, [currentUser, onClose, slotHour]);
+  }, [currentUser, onClose, slotHour, slotMinutes]);
 
   useEffect(() => {
     if (open && countdown === 0 && !missHandledRef.current) {

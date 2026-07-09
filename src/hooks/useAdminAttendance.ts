@@ -9,7 +9,7 @@ import {
   type EnrichedAttendance,
   type AttendanceDateStats,
 } from "@/lib/adminAttendance";
-import { getLocalDateString } from "@/lib/format";
+import { getLocalDateString, isSunday } from "@/lib/format";
 
 export function useAdminAttendance() {
   const { currentUser, loading: authLoading } = useAuth();
@@ -24,6 +24,11 @@ export function useAdminAttendance() {
     try {
       setLoading(true);
       setError(null);
+      if (isSunday(date)) {
+        setRecords([]);
+        setStats({ total: 0, present: 0, late: 0, absent: 0, halfDay: 0, onLeave: 0, checkedOut: 0, onBreak: 0, attendancePercent: 0 });
+        return;
+      }
       const result = await getAdminAttendanceByDate(date);
       setRecords(result.records);
       setStats(result.stats);

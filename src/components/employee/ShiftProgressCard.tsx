@@ -46,7 +46,7 @@ export default function ShiftProgressCard({
   checkOut,
   shiftDurationHours = 8,
 }: ShiftProgressCardProps) {
-  const startDisplay = checkIn ? formatFirebaseTime(checkIn) : mockStart || "09:00 AM";
+  const startDisplay = checkIn ? formatFirebaseTime(checkIn) : mockStart || "10:00 AM";
   const endDisplay = checkOut ? formatFirebaseTime(checkOut) : mockEnd || "06:00 PM";
 
   const [progress, setProgress] = useState(() =>

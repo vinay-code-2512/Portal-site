@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
+import { getLocalDateString, isSunday } from "@/lib/format";
 
 export interface ActivityAttachment {
   name: string;
@@ -51,7 +52,12 @@ export function useActivityLog(maxItems = 5) {
         );
         if (cancelled) return;
         const items: ActivityEvent[] = [];
-        snap.forEach((d) => items.push({ id: d.id, ...d.data() } as ActivityEvent));
+        snap.forEach((d) => {
+          const entry = { id: d.id, ...d.data() } as ActivityEvent;
+          const ts = entry.timestamp?.toDate ? entry.timestamp.toDate() : entry.timestamp ? new Date(entry.timestamp) : null;
+          if (ts && isSunday(getLocalDateString(ts))) return;
+          items.push(entry);
+        });
         setActivities(items);
       } catch (err: any) {
         if (!cancelled) setError(err?.message || "Failed to load activity");

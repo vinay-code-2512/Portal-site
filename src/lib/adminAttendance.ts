@@ -5,7 +5,7 @@ import {
   Timestamp, serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { getLocalDateString } from "./format";
+import { getLocalDateString, isSunday } from "./format";
 
 export interface EnrichedAttendance {
   uid: string;
@@ -37,6 +37,9 @@ export interface AttendanceDateStats {
 
 export async function getAdminAttendanceByDate(date?: string) {
   const targetDate = date || getLocalDateString(new Date());
+  if (isSunday(targetDate)) {
+    return { records: [], stats: { total: 0, present: 0, late: 0, absent: 0, halfDay: 0, onLeave: 0, checkedOut: 0, onBreak: 0, attendancePercent: 0 } };
+  }
 
   const [usersSnap, attSnap, leavesSnap] = await Promise.all([
     getDocs(query(collection(db, "users"), where("role", "==", "employee"))),
@@ -235,6 +238,9 @@ export async function getAttendanceForDateRange(start: string, end: string) {
     )
   );
   const records: any[] = [];
-  snap.forEach((d) => records.push({ id: d.id, ...d.data() }));
+  snap.forEach((d) => {
+    const data = { id: d.id, ...d.data() };
+    if (!isSunday(data.date)) records.push(data);
+  });
   return records;
 }

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, Timestamp, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { getLocalDateString } from "@/lib/format";
+import { getLocalDateString, isSunday } from "@/lib/format";
 import type { UserProfile } from "./useCurrentUser";
 
 export interface AttendanceRecord {
@@ -111,6 +111,13 @@ export function useAdminDashboard() {
       try {
         setLoading(true);
         setError(null);
+
+        if (isSunday(today)) {
+          setEmployees([]);
+          setTodayAttendance([]);
+          setApprovedLeaves(new Set());
+          return;
+        }
 
         await autoCheckoutIfNeeded();
 

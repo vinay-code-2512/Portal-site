@@ -10,6 +10,7 @@ import { appendToGoogleSheet, createEmployeeSheet } from "@/lib/googleSheets";
 import { fetchAdminEmails } from "@/lib/adminHelpers";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { isSunday } from "@/lib/format";
 
 const TRIGGER_WINDOW_MINUTES = 7;
 
@@ -45,6 +46,7 @@ export default function ActivityConfirmationProvider({ children }: { children: R
   const { sessionStatus } = useTimeTracker();
   const [modalOpen, setModalOpen] = useState(false);
   const [slotHour, setSlotHour] = useState<number | undefined>(undefined);
+  const [slotMinutes, setSlotMinutes] = useState<number | undefined>(undefined);
 
   const todayRecordRef = useRef(todayRecord);
   todayRecordRef.current = todayRecord;
@@ -57,6 +59,8 @@ export default function ActivityConfirmationProvider({ children }: { children: R
     const checkTimeAndTrigger = () => {
       const now = new Date();
       const currentHour = now.getHours();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      if (isSunday(todayStr)) return;
       const record = todayRecordRef.current;
       const status = sessionStatusRef.current;
 
@@ -95,6 +99,7 @@ export default function ActivityConfirmationProvider({ children }: { children: R
         }
         localStorage.setItem(fifteenKey, String(Date.now()));
         setSlotHour(currentHour);
+        setSlotMinutes(0);
         setModalOpen(true);
         return;
       }
@@ -148,6 +153,7 @@ export default function ActivityConfirmationProvider({ children }: { children: R
           triggeredData.slots.push(currentSlotKey);
           localStorage.setItem(storageKey, JSON.stringify(triggeredData));
           setSlotHour(currentHour);
+          setSlotMinutes(isHalf ? 30 : 0);
           setModalOpen(true);
         }
         return;
@@ -192,6 +198,7 @@ export default function ActivityConfirmationProvider({ children }: { children: R
         triggeredData.hours.push(currentHour);
         localStorage.setItem(storageKey, JSON.stringify(triggeredData));
         setSlotHour(currentHour);
+        setSlotMinutes(0);
         setModalOpen(true);
       }
     };
@@ -210,7 +217,7 @@ export default function ActivityConfirmationProvider({ children }: { children: R
           return { name, url, type: f.type.startsWith("image/") ? "image" as const : "pdf" as const };
         })
       );
-      await saveActivityConfirmation(profile.uid, note, attachments);
+      await saveActivityConfirmation(profile.uid, note, attachments, slotMinutes);
 
       let sheetId = profile.googleSheetId;
       if (!sheetId) {
@@ -256,7 +263,7 @@ export default function ActivityConfirmationProvider({ children }: { children: R
       console.error("Failed to save activity confirmation:", err);
     }
     setModalOpen(false);
-  }, [profile]);
+  }, [profile, slotMinutes]);
 
   const handleClose = useCallback(() => {
     if (profile) {
@@ -274,6 +281,7 @@ export default function ActivityConfirmationProvider({ children }: { children: R
         onClose={handleClose}
         timeout={300}
         slotHour={slotHour}
+        slotMinutes={slotMinutes}
       />
     </>
   );

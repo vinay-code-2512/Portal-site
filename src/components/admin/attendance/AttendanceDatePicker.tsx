@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, CalendarDays, Filter } from "lucide-react";
+import { isSunday } from "@/lib/format";
 
 interface AttendanceDatePickerProps {
   selectedDate: string;
@@ -50,6 +51,9 @@ export default function AttendanceDatePicker({
               </span>
             )}
           </div>
+          {isSunday(selectedDate) && (
+            <span className="text-[10px] text-amber-500 font-semibold mt-0.5">No work on Sundays</span>
+          )}
         </div>
       </div>
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, CalendarRange } from "lucide-react";
 import { getAttendanceForDateRange } from "@/lib/adminAttendance";
-import { getLocalDateString } from "@/lib/format";
+import { getLocalDateString, isSunday } from "@/lib/format";
 
 interface DayData {
   date: string;
@@ -186,10 +186,11 @@ export default function MonthlyCalendarView() {
                 }
               }
 
+              const isSundayCell = isSunday(day.date);
               return (
                 <div
                   key={day.date}
-                  className={`aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5 p-1 text-[10px] transition-all duration-200 cursor-default ${bgStyle}`}
+                  className={`aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5 p-1 text-[10px] transition-all duration-200 cursor-default ${bgStyle} ${isSundayCell ? "opacity-30" : ""}`}
                 >
                   <span
                     className={`font-extrabold leading-none ${
@@ -198,12 +199,12 @@ export default function MonthlyCalendarView() {
                         : day.total > 0
                         ? "text-zinc-800"
                         : "text-zinc-400"
-                    }`}
+                    } ${isSundayCell ? "opacity-40" : ""}`}
                   >
                     {day.day}
                   </span>
 
-                  {day.total > 0 ? (
+                  {!isSundayCell && day.total > 0 ? (
                     <div className="flex items-center gap-0.5">
                       {day.present > 0 && (
                         <span

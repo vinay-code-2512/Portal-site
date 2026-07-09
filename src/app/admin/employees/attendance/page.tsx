@@ -6,7 +6,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getEmployee } from "@/lib/employees";
 import { getTodayRecord, getWeeklyRecords } from "@/lib/attendance";
-import { getLocalDateString } from "@/lib/format";
+import { getLocalDateString, isSunday } from "@/lib/format";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
 import WeeklyOverview from "@/components/employee/attendance/WeeklyOverview";
@@ -84,10 +84,11 @@ function computeHours(checkIn: any, checkOut: any): string {
 }
 
 function AttendanceHistory({ attendance }: { attendance: any[] }) {
-  const months = [...new Set(attendance.map((r) => getMonthKey(r.date)))].sort().reverse();
+  const filteredAttendance = attendance.filter((r) => !isSunday(r.date));
+  const months = [...new Set(filteredAttendance.map((r) => getMonthKey(r.date)))].sort().reverse();
   const [selectedMonth, setSelectedMonth] = useState(months[0] || getMonthKey(new Date().toISOString().slice(0, 10)));
 
-  const filtered = attendance.filter((r) => getMonthKey(r.date) === selectedMonth).sort((a, b) => b.date.localeCompare(a.date));
+  const filtered = filteredAttendance.filter((r) => getMonthKey(r.date) === selectedMonth).sort((a, b) => b.date.localeCompare(a.date));
 
   const currentIdx = months.indexOf(selectedMonth);
 
@@ -572,6 +573,7 @@ function WeeklyContent({ employeeId }: { employeeId: string }) {
         for (let i = 0; i < 7; i++) {
           const d = new Date(monday);
           d.setDate(monday.getDate() + i);
+          if (d.getDay() === 0) continue;
           const dateStr = getLocalDateString(d);
           const record = records.find((r: any) => r.date === dateStr);
 
@@ -780,7 +782,7 @@ function PageContent() {
 
         setEmployee(emp);
         setTodayRecord(today);
-        setAttendance(attSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setAttendance(attSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((r: any) => !isSunday(r.date)));
       } catch (err: any) {
         setError(err?.message || "Failed to load attendance data");
       } finally {
