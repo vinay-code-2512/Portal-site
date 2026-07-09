@@ -69,7 +69,6 @@ export function useAttendance() {
 
         if (todaySnap.exists()) {
           const todayData = todaySnap.data() as any;
-          if (todayData.autoCheckedOut) todayData.status = "absent";
           setTodayRecord({ id: todaySnap.id, ...todayData } as AttendanceRecord);
         } else {
           setTodayRecord(null);
@@ -78,7 +77,6 @@ export function useAttendance() {
         const records: AttendanceRecord[] = [];
         monthlySnap.forEach((d) => {
           const data = d.data() as any;
-          if (data.autoCheckedOut) data.status = "absent";
           records.push({ id: d.id, ...data } as AttendanceRecord);
         });
         setMonthlyRecords(records.filter((r) => !isSunday(r.date)));

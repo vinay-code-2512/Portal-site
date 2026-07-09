@@ -22,8 +22,11 @@ export default function ProtectedRoute({ children, allowedRoles, fallback }: Pro
     if (authLoading || permLoading) return;
     if (!currentUser) {
       if (typeof window !== "undefined" && sessionStorage.getItem("rg_logging_out")) return;
-      const role = pathname.startsWith("/employee") ? "employee" : "admin";
-      router.replace(`/login?role=${role}`);
+      const timer = setTimeout(() => {
+        const roleParam = pathname.startsWith("/employee") ? "employee" : "admin";
+        router.replace(`/login?role=${roleParam}`);
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [currentUser, authLoading, permLoading, router, pathname]);
 
