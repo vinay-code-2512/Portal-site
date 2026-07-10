@@ -237,7 +237,7 @@ export default function FloatingChat() {
     <>
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-5 right-5 z-50 w-12 h-12 rounded-full bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 transition-all cursor-pointer flex items-center justify-center"
+        className="fixed bottom-5 right-5 z-50 w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg hover:from-indigo-600 hover:to-purple-700 transition-all cursor-pointer flex items-center justify-center"
         title="Chat"
       >
         {open ? (
@@ -257,7 +257,7 @@ export default function FloatingChat() {
           {isEmployee && !currentConv && (
             <>
               <div className="px-4 py-3 border-b border-zinc-200 bg-zinc-50 flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-emerald-600" />
+                <MessageCircle className="w-4 h-4 text-purple-600" />
                 <span className="text-sm font-bold text-zinc-800">My Students ({conversations.length})</span>
               </div>
               <div className="flex-1 overflow-y-auto">
@@ -276,7 +276,7 @@ export default function FloatingChat() {
                       onClick={() => selectConversation(conv)}
                       className="w-full px-4 py-3 flex items-center gap-3 hover:bg-zinc-50 transition-colors border-b border-zinc-100 text-left cursor-pointer"
                     >
-                      <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-600 shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-sm font-bold text-purple-600 shrink-0">
                         {conv.paidUserName.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -301,7 +301,7 @@ export default function FloatingChat() {
                     <ChevronLeft className="w-4 h-4 text-zinc-600" />
                   </button>
                 )}
-                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-sm font-bold text-emerald-600 shrink-0">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-sm font-bold text-purple-600 shrink-0">
                   {isEmployee
                     ? currentConv?.paidUserName.charAt(0).toUpperCase() || "?"
                     : employeeName.charAt(0).toUpperCase() || "?"}
@@ -327,14 +327,14 @@ export default function FloatingChat() {
                         <div
                           className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
                             isMine
-                              ? "bg-emerald-500 text-white rounded-br-md"
+                              ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-br-md"
                               : "bg-white border border-zinc-200 text-zinc-800 rounded-bl-md"
                           }`}
                         >
                           <p>{msg.text}</p>
                           <p
                             className={`text-[9px] mt-0.5 ${
-                              isMine ? "text-emerald-200" : "text-zinc-400"
+                              isMine ? "text-purple-200" : "text-zinc-400"
                             }`}
                           >
                             {msg.createdAt?.toDate
@@ -363,12 +363,12 @@ export default function FloatingChat() {
                     onChange={(e) => { setText(e.target.value); setSendError(""); }}
                     onKeyDown={handleKeyDown}
                     placeholder="Type a message..."
-                    className="flex-1 px-3 py-2 rounded-xl bg-zinc-100 border border-zinc-200 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-300"
+                    className="flex-1 px-3 py-2 rounded-xl bg-zinc-100 border border-zinc-200 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:border-purple-300"
                   />
                   <button
                     onClick={handleSend}
                     disabled={!text.trim() || sending}
-                    className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-50 cursor-pointer shrink-0"
+                    className="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white flex items-center justify-center hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 cursor-pointer shrink-0"
                   >
                     {sending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
