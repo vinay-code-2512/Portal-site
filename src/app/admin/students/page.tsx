@@ -16,6 +16,7 @@ interface StudentCard {
   userId: string;
   userName: string;
   userEmail: string;
+  assignedEmployeeName?: string;
   courses: string[];
   totalPaid: number;
   paymentType?: string;
@@ -45,7 +46,7 @@ export default function AdminStudents() {
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState<{ email: string; password: string } | null>(null);
-  const [allottedEmployee, setAllottedEmployee] = useState("");
+  const [assignedEmployee, setAssignedEmployee] = useState("");
   const [employees, setEmployees] = useState<{ uid: string; fullName: string }[]>([]);
 
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
@@ -103,7 +104,7 @@ export default function AdminStudents() {
         );
 
         const userIds: string[] = [];
-        const userMap = new Map<string, { fullName: string; email: string; courseName?: string; paymentType?: string; classType?: string; batchName?: string }>();
+        const userMap = new Map<string, { fullName: string; email: string; courseName?: string; paymentType?: string; classType?: string; batchName?: string; assignedEmployeeName?: string }>();
         userSnap.forEach((d) => {
           const data = d.data();
           userIds.push(d.id);
@@ -114,6 +115,7 @@ export default function AdminStudents() {
             paymentType: data.paymentType || undefined,
             classType: data.classType || data.class_type || undefined,
             batchName: data.batchName || undefined,
+            assignedEmployeeName: data.assignedEmployeeName || data.allottedEmployeeName || undefined,
           });
         });
 
@@ -154,6 +156,7 @@ export default function AdminStudents() {
             paymentType: userPaymentType || enrollInfo?.paymentType || enrollDoc?.data()?.paymentType || undefined,
             classType: userInfo?.classType || enrollDoc?.data()?.classType || undefined,
             batchName: userInfo?.batchName || enrollDoc?.data()?.batchName || undefined,
+            assignedEmployeeName: userInfo?.assignedEmployeeName,
           });
         }
 
@@ -245,7 +248,8 @@ export default function AdminStudents() {
     .filter(
       (s) =>
         s.userName.toLowerCase().includes(search.toLowerCase()) ||
-        s.userEmail.toLowerCase().includes(search.toLowerCase())
+        s.userEmail.toLowerCase().includes(search.toLowerCase()) ||
+        (s.assignedEmployeeName || "").toLowerCase().includes(search.toLowerCase())
     );
 
   async function handleCreateAccount(e: React.FormEvent) {
@@ -269,8 +273,8 @@ export default function AdminStudents() {
     setCreating(true);
     try {
       const adminIdToken = await currentUser?.getIdToken();
-      const allottedEmp = allottedEmployee ? employees.find((e) => e.uid === allottedEmployee) : undefined;
-      const result = await createPaidUser(fullName.trim(), email.trim(), phone.trim(), password, classType, batchName.trim() || undefined, adminIdToken, allottedEmp?.uid, allottedEmp?.fullName);
+      const assignedEmp = assignedEmployee ? employees.find((e) => e.uid === assignedEmployee) : undefined;
+      const result = await createPaidUser(fullName.trim(), email.trim(), phone.trim(), password, classType, batchName.trim() || undefined, adminIdToken, assignedEmp?.uid, assignedEmp?.fullName);
       if (result.success) {
         const totalFeeNum = Number(totalCost);
 
@@ -378,7 +382,7 @@ export default function AdminStudents() {
     setPaymentType("full");
     setFormError("");
     setFormSuccess(null);
-    setAllottedEmployee("");
+    setAssignedEmployee("");
   }
 
   const inputClass = "w-full min-h-[44px] px-4 rounded-xl bg-white/[0.04] border border-white/10 text-sm text-zinc-700 placeholder-zinc-400 focus:outline-none focus:border-indigo-500/40 transition-colors";
@@ -521,10 +525,10 @@ export default function AdminStudents() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Allotted Employee</label>
+                <label className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Assigned Employee</label>
                 <select
-                  value={allottedEmployee}
-                  onChange={(e) => setAllottedEmployee(e.target.value)}
+                  value={assignedEmployee}
+                  onChange={(e) => setAssignedEmployee(e.target.value)}
                   className={`${inputClass} appearance-none cursor-pointer`}
                 >
                   <option value="">Select an employee</option>
@@ -1323,6 +1327,12 @@ export default function AdminStudents() {
                           </span>
                         )}
                       </div>
+                      {student.assignedEmployeeName && (
+                        <p className="text-[10px] text-zinc-500 flex items-center gap-1">
+                          <UserIcon className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{student.assignedEmployeeName}</span>
+                        </p>
+                      )}
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-zinc-400 font-medium">
                           {student.courses.length} course{student.courses.length !== 1 ? "s" : ""}

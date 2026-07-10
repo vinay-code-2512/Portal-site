@@ -8,6 +8,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
+import FloatingChat from "@/components/FloatingChat";
 import {
   LayoutDashboard,
   CalendarOff,
@@ -77,6 +78,7 @@ export default function EmployeeLayout({ children }: { children: ReactNode }) {
       >
         <ActivityConfirmationProvider>
           {children}
+          <FloatingChat />
         </ActivityConfirmationProvider>
       </DashboardLayout>
     </ProtectedRoute>

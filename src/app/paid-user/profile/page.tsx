@@ -7,7 +7,7 @@ import { updateProfile, updatePassword } from "firebase/auth";
 import { auth, storage } from "@/lib/firebase";
 import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
 import {
-  Mail, Phone, BookOpen, IndianRupee, CreditCard, CheckCircle, Shield, Tag, Camera, Loader2, Lock, Eye, EyeOff
+  Mail, Phone, BookOpen, IndianRupee, CreditCard, CheckCircle, Shield, Tag, Camera, Loader2, Lock, Eye, EyeOff, Calendar, User
 } from "lucide-react";
 
 export default function PaidUserProfilePage() {
@@ -139,6 +139,15 @@ export default function PaidUserProfilePage() {
   const phone = userData?.phone || "";
   const role = userData?.role || "";
   const classType = (userData as any)?.classType || "";
+  const assignedEmployee = (userData as any)?.assignedEmployeeName || (userData as any)?.allottedEmployeeName || "";
+  const createdAt = (userData as any)?.createdAt;
+  const memberSince = createdAt
+    ? (createdAt.toDate
+        ? createdAt.toDate().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+        : createdAt.seconds
+        ? new Date(createdAt.seconds * 1000).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+        : new Date(createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }))
+    : "";
   const photoURL = userData?.photoURL || currentUser?.photoURL || "";
   const initial = fullName.charAt(0).toUpperCase();
   const totalPaid = enrollments.reduce((sum, e) => sum + e.amount, 0);
@@ -232,6 +241,18 @@ export default function PaidUserProfilePage() {
               <BookOpen className="w-3 h-3" /> Courses Enrolled
             </p>
             <p className="text-lg font-black text-zinc-800 mt-1">{groupedEnrollments.length}</p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-white/40 border border-[var(--border-light)]">
+            <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <User className="w-3 h-3" /> Assigned Employee
+            </p>
+            <p className="text-sm font-bold text-zinc-800 mt-1">{assignedEmployee || "—"}</p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-white/40 border border-[var(--border-light)]">
+            <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> Member Since
+            </p>
+            <p className="text-sm font-bold text-zinc-800 mt-1">{memberSince || "—"}</p>
           </div>
         </div>
 

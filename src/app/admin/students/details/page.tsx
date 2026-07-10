@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -17,6 +17,36 @@ interface EnrollmentDoc {
   totalFee?: number;
 }
 
+interface Installment {
+  id: string;
+  amount: number;
+  paymentType?: string;
+  totalFee?: number;
+}
+
+interface GroupedEnrollment {
+  courseName: string;
+  totalAmount: number;
+  installments: Installment[];
+}
+
+function groupEnrollments(enrollments: EnrollmentDoc[]): GroupedEnrollment[] {
+  const map = new Map<string, { totalAmount: number; installments: Installment[] }>();
+  enrollments.forEach((e) => {
+    if (!map.has(e.courseName)) {
+      map.set(e.courseName, { totalAmount: 0, installments: [] });
+    }
+    const group = map.get(e.courseName)!;
+    group.totalAmount += e.amount;
+    group.installments.push({ id: e.id, amount: e.amount, paymentType: e.paymentType, totalFee: e.totalFee });
+  });
+  return Array.from(map.entries()).map(([courseName, group]) => ({
+    courseName,
+    totalAmount: group.totalAmount,
+    installments: group.installments,
+  }));
+}
+
 interface StudentData {
   userId: string;
   userName: string;
@@ -26,6 +56,7 @@ interface StudentData {
   classType: string;
   paymentType: string;
   createdAt: string;
+  assignedEmployeeName?: string;
   courses: string[];
   totalPaid: number;
   enrollments: EnrollmentDoc[];
@@ -54,6 +85,8 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
   const [addTotalFee, setAddTotalFee] = useState("");
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState("");
+
+  const groupedEnrollments = useMemo(() => groupEnrollments(student.enrollments), [student.enrollments]);
 
   async function handleEditEnrollment(enrollId: string) {
     const enroll = student.enrollments.find((e) => e.id === enrollId);
@@ -149,18 +182,15 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
           </div>
           <div className="p-3.5 rounded-xl bg-white/40 border border-[var(--border-light)]">
             <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <User className="w-3 h-3" /> Assigned Employee
+            </p>
+            <p className="text-sm font-bold text-zinc-800 mt-1">{student.assignedEmployeeName || "—"}</p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-white/40 border border-[var(--border-light)]">
+            <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
               <Calendar className="w-3 h-3" /> Member Since
             </p>
             <p className="text-sm font-bold text-zinc-800 mt-1">{student.createdAt || "—"}</p>
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="p-3.5 rounded-xl bg-white/40 border border-[var(--border-light)]">
-            <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-              <User className="w-3 h-3" /> User ID
-            </p>
-            <p className="text-xs font-mono font-bold text-zinc-800 mt-1 truncate">{student.userId}</p>
           </div>
           <div className="p-3.5 rounded-xl bg-white/40 border border-[var(--border-light)]">
             <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
@@ -172,190 +202,210 @@ function ProfileTab({ student, onRefresh }: { student: StudentData; onRefresh: (
           </div>
         </div>
 
+        <div className="mt-4 grid grid-cols-1 gap-3">
+          <div className="sm:col-span-2 p-3.5 rounded-xl bg-white/40 border border-[var(--border-light)]">
+            <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <User className="w-3 h-3" /> User ID
+            </p>
+            <p className="text-xs font-mono font-bold text-zinc-800 mt-1 truncate">{student.userId}</p>
+          </div>
+        </div>
+
         <div className="mt-4">
           <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-            <BookOpen className="w-3 h-3" /> Enrolled Courses ({student.enrollments.length})
+            <BookOpen className="w-3 h-3" /> Enrolled Courses ({groupedEnrollments.length})
           </h3>
-          <div className="space-y-2">
-            {student.enrollments.length === 0 ? (
+          <div className="space-y-3">
+            {groupedEnrollments.length === 0 ? (
               <span className="text-xs text-zinc-400">No courses enrolled</span>
             ) : (
-              student.enrollments.map((enroll) => (
-                <div key={enroll.id} className="space-y-1">
+              groupedEnrollments.map((group) => (
+                <div key={group.courseName} className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-600 text-xs font-bold">
                       <BookOpen className="w-3 h-3" />
-                      {enroll.courseName}
+                      {group.courseName}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-bold">
-                      <IndianRupee className="w-3 h-3 text-emerald-600" />
-                      {enroll.amount.toLocaleString("en-IN")}
-                      {enroll.totalFee ? (
-                        <span className="text-emerald-400"> / {enroll.totalFee.toLocaleString("en-IN")}</span>
-                      ) : null}
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-700 text-xs font-bold">
+                      <IndianRupee className="w-3 h-3" color="#444" />
+                      {group.totalAmount.toLocaleString("en-IN")}
                     </span>
-                    <button
-                      onClick={() => handleEditEnrollment(enroll.id)}
-                      className="p-1.5 rounded-lg hover:bg-indigo-50 text-zinc-400 hover:text-indigo-600 transition-colors"
-                      title="Edit payment"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAddForCourse(addForCourse === enroll.id ? null : enroll.id);
-                        setAddAmount("");
-                        setAddPaymentType("emi");
-                        setAddTotalFee(enroll.totalFee ? String(enroll.totalFee) : "");
-                        setAddError("");
-                      }}
-                      className="p-1.5 rounded-lg hover:bg-emerald-50 text-zinc-400 hover:text-emerald-600 transition-colors"
-                      title="Add payment"
-                    >
-                      <IndianRupee className="w-3.5 h-3.5" />
-                    </button>
-                    {editEnrollId === enroll.id && (
-                      <div className="w-full mt-1 p-3 rounded-xl bg-white/60 border border-[var(--border-light)] space-y-2">
-                        {editError && (
-                          <p className="text-xs text-red-500">{editError}</p>
-                        )}
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Amount Paid</label>
-                            <input
-                              type="number"
-                              value={editAmount}
-                              onChange={(e) => setEditAmount(e.target.value)}
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-indigo-300"
-                              min="0"
-                            />
-                          </div>
-                          <div>
-                          <label className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Payment</label>
-                            <select
-                              value={editPaymentType}
-                              onChange={(e) => setEditPaymentType(e.target.value as "full" | "emi")}
-                              className="px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-indigo-300 appearance-none cursor-pointer bg-white"
-                            >
-                              <option value="full">FULL PAID</option>
-                              <option value="emi">EMI</option>
-                            </select>
-                          </div>
-                          <div className="w-24">
-                          <label className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Total Fee</label>
-                            <input
-                              type="number"
-                              value={editTotalFee}
-                              onChange={(e) => setEditTotalFee(e.target.value)}
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-indigo-300"
-                              min="0"
-                              placeholder="0"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleSaveEnrollment}
-                            disabled={editSaving}
-                            className="min-h-[30px] px-3 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
-                          >
-                            {editSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                            Save
-                          </button>
-                          <button
-                            onClick={() => { setEditEnrollId(null); setEditError(""); }}
-                            className="min-h-[30px] px-3 rounded-lg bg-zinc-100 text-zinc-600 text-xs font-bold hover:bg-zinc-200 transition-all cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
-                  {addForCourse === enroll.id && (
-                    <div className="ml-9 p-3 rounded-xl bg-white border border-emerald-200 space-y-2">
-                      {addError && (
-                        <p className="text-xs text-red-500">{addError}</p>
-                      )}
-                      <p className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">Add Payment for {enroll.courseName}</p>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <label className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Amount Paid</label>
-                          <input
-                            type="number"
-                            value={addAmount}
-                            onChange={(e) => setAddAmount(e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-emerald-300"
-                            min="0"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Payment</label>
-                          <select
-                            value={addPaymentType}
-                            onChange={(e) => setAddPaymentType(e.target.value as "full" | "emi")}
-                            className="px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-emerald-300 appearance-none cursor-pointer bg-white"
-                          >
-                            <option value="full">FULL PAID</option>
-                            <option value="emi">EMI</option>
-                          </select>
-                        </div>
-                        <div className="w-24">
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Total Fee</label>
-                          <input
-                            type="number"
-                            value={addTotalFee}
-                            onChange={(e) => setAddTotalFee(e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-emerald-300"
-                            min="0"
-                            placeholder="0"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
+                  <div className="ml-6 space-y-1">
+                    {group.installments.map((inst) => (
+                      <div key={inst.id} className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
+                          <IndianRupee className="w-3 h-3" color="#444" />
+                          {inst.amount.toLocaleString("en-IN")}
+                          {inst.totalFee ? (
+                            <span className="text-emerald-400"> / {inst.totalFee.toLocaleString("en-IN")}</span>
+                          ) : null}
+                        </span>
                         <button
-                          onClick={async () => {
-                            const amountNum = Number(addAmount);
-                            if (isNaN(amountNum) || amountNum <= 0) { setAddError("Enter a valid amount"); return; }
-                            setAddSaving(true);
+                          onClick={() => handleEditEnrollment(inst.id)}
+                          className="p-1.5 rounded-lg hover:bg-indigo-50 text-zinc-400 hover:text-indigo-600 transition-colors"
+                          title="Edit payment"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setAddForCourse(addForCourse === inst.id ? null : inst.id);
+                            setAddAmount("");
+                            setAddPaymentType("emi");
+                            const enroll = student.enrollments.find((e) => e.id === inst.id);
+                            setAddTotalFee(enroll?.totalFee ? String(enroll.totalFee) : "");
                             setAddError("");
-                            try {
-                              const courseId = enroll.courseName.toLowerCase().replace(/\s+/g, "-");
-                              const enrollmentData: any = {
-                                userId: student.userId,
-                                userName: student.userName,
-                                userEmail: student.userEmail,
-                                courseId,
-                                courseName: enroll.courseName,
-                                amount: amountNum,
-                                paymentType: addPaymentType,
-                              };
-                              if (addTotalFee) enrollmentData.totalFee = Number(addTotalFee);
-                              await createEnrollment(enrollmentData);
-                              setAddForCourse(null);
-                              setAddAmount("");
-                              onRefresh();
-                            } catch (e: any) {
-                              setAddError(e?.message || "Failed to add payment");
-                            } finally {
-                              setAddSaving(false);
-                            }
                           }}
-                          disabled={addSaving}
-                          className="min-h-[30px] px-3 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                          className="p-1.5 rounded-lg hover:bg-emerald-100 text-zinc-400 hover:text-emerald-700 transition-colors"
+                          title="Add payment"
                         >
-                          {addSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-                          Add
+                          <IndianRupee className="w-3.5 h-3.5" color="#444" />
                         </button>
-                        <button
-                          onClick={() => { setAddForCourse(null); setAddError(""); }}
-                          className="min-h-[30px] px-3 rounded-lg bg-white text-emerald-600 border border-emerald-200 text-xs font-bold hover:bg-emerald-50 transition-all cursor-pointer"
-                        >
-                          Cancel
-                        </button>
+                        {editEnrollId === inst.id && (
+                          <div className="w-full mt-1 p-3 rounded-xl bg-white/60 border border-[var(--border-light)] space-y-2">
+                            {editError && (
+                              <p className="text-xs text-red-500">{editError}</p>
+                            )}
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1">
+                                <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Amount Paid</label>
+                                <input
+                                  type="number"
+                                  value={editAmount}
+                                  onChange={(e) => setEditAmount(e.target.value)}
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-indigo-300"
+                                  min="0"
+                                />
+                              </div>
+                              <div>
+                              <label className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Payment</label>
+                                <select
+                                  value={editPaymentType}
+                                  onChange={(e) => setEditPaymentType(e.target.value as "full" | "emi")}
+                                  className="px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-indigo-300 appearance-none cursor-pointer bg-white"
+                                >
+                                  <option value="full">FULL PAID</option>
+                                  <option value="emi">EMI</option>
+                                </select>
+                              </div>
+                              <div className="w-24">
+                              <label className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Total Fee</label>
+                                <input
+                                  type="number"
+                                  value={editTotalFee}
+                                  onChange={(e) => setEditTotalFee(e.target.value)}
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-indigo-300"
+                                  min="0"
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleSaveEnrollment}
+                                disabled={editSaving}
+                                className="min-h-[30px] px-3 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                              >
+                                {editSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                Save
+                              </button>
+                              <button
+                                onClick={() => { setEditEnrollId(null); setEditError(""); }}
+                                className="min-h-[30px] px-3 rounded-lg bg-zinc-100 text-zinc-600 text-xs font-bold hover:bg-zinc-200 transition-all cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {addForCourse === inst.id && (
+                          <div className="w-full p-3 rounded-xl bg-white border border-emerald-200 space-y-2">
+                            {addError && (
+                              <p className="text-xs text-red-500">{addError}</p>
+                            )}
+                            <p className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">Add Payment for {group.courseName}</p>
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1">
+                                <label className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Amount Paid</label>
+                                <input
+                                  type="number"
+                                  value={addAmount}
+                                  onChange={(e) => setAddAmount(e.target.value)}
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-emerald-300"
+                                  min="0"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Payment</label>
+                                <select
+                                  value={addPaymentType}
+                                  onChange={(e) => setAddPaymentType(e.target.value as "full" | "emi")}
+                                  className="px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-emerald-300 appearance-none cursor-pointer bg-white"
+                                >
+                                  <option value="full">FULL PAID</option>
+                                  <option value="emi">EMI</option>
+                                </select>
+                              </div>
+                              <div className="w-24">
+                                <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Total Fee</label>
+                                <input
+                                  type="number"
+                                  value={addTotalFee}
+                                  onChange={(e) => setAddTotalFee(e.target.value)}
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-medium focus:outline-none focus:border-emerald-300"
+                                  min="0"
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  const amountNum = Number(addAmount);
+                                  if (isNaN(amountNum) || amountNum <= 0) { setAddError("Enter a valid amount"); return; }
+                                  setAddSaving(true);
+                                  setAddError("");
+                                  try {
+                                    const courseId = group.courseName.toLowerCase().replace(/\s+/g, "-");
+                                    const enrollmentData: any = {
+                                      userId: student.userId,
+                                      userName: student.userName,
+                                      userEmail: student.userEmail,
+                                      courseId,
+                                      courseName: group.courseName,
+                                      amount: amountNum,
+                                      paymentType: addPaymentType,
+                                    };
+                                    if (addTotalFee) enrollmentData.totalFee = Number(addTotalFee);
+                                    await createEnrollment(enrollmentData);
+                                    setAddForCourse(null);
+                                    setAddAmount("");
+                                    onRefresh();
+                                  } catch (e: any) {
+                                    setAddError(e?.message || "Failed to add payment");
+                                  } finally {
+                                    setAddSaving(false);
+                                  }
+                                }}
+                                disabled={addSaving}
+                                className="min-h-[30px] px-3 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                              >
+                                {addSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                                Add
+                              </button>
+                              <button
+                                onClick={() => { setAddForCourse(null); setAddError(""); }}
+                                className="min-h-[30px] px-3 rounded-lg bg-white text-emerald-700 border border-emerald-300 text-xs font-bold hover:bg-emerald-100 transition-all cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
               ))
             )}
@@ -1095,6 +1145,7 @@ function StudentDetailsInner() {
         role: userData.role || "",
         classType: userData.classType || "",
         paymentType: userData.paymentType || "",
+        assignedEmployeeName: userData.assignedEmployeeName || userData.allottedEmployeeName || "",
         createdAt: formatDate(userData.createdAt),
         courses,
         totalPaid,

@@ -45,8 +45,8 @@ export async function createPaidUser(
   classType?: "live" | "recorded",
   batchName?: string,
   adminIdToken?: string,
-  allottedEmployeeUid?: string,
-  allottedEmployeeName?: string
+  assignedEmployeeUid?: string,
+  assignedEmployeeName?: string
 ): Promise<CreatePaidUserResult> {
   try {
     for (let attempt = 1; attempt <= 2; attempt++) {
@@ -87,8 +87,8 @@ export async function createPaidUser(
         createdAt: { timestampValue: new Date().toISOString() },
       };
       if (batchName) fields.batchName = { stringValue: batchName };
-      if (allottedEmployeeUid) fields.allottedEmployeeUid = { stringValue: allottedEmployeeUid };
-      if (allottedEmployeeName) fields.allottedEmployeeName = { stringValue: allottedEmployeeName };
+      if (assignedEmployeeUid) fields.assignedEmployeeUid = { stringValue: assignedEmployeeUid };
+      if (assignedEmployeeName) fields.assignedEmployeeName = { stringValue: assignedEmployeeName };
       const docPayload = { fields };
 
       const firestoreRes = await fetch(firestoreUrl, {
